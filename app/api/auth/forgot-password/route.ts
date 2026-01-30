@@ -93,13 +93,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Send password reset email
-    try {
-      await sendPasswordResetEmail(normalizedEmail, token);
-      console.log('Password reset email sent to:', normalizedEmail);
-    } catch (emailError) {
-      console.error('Failed to send password reset email:', emailError);
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password/confirm?token=${token}`;
+    const emailResult = await sendPasswordResetEmail(normalizedEmail, resetUrl);
+
+    if (!emailResult.success) {
+      console.error('Failed to send password reset email:', emailResult.error);
       // Still return success - don't reveal if email exists
       // The token is stored, user can try again
+    } else {
+      console.log('Password reset email sent to:', normalizedEmail);
     }
 
     // Return success response (don't reveal if email exists)

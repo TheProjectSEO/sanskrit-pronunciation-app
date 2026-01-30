@@ -15,23 +15,23 @@ const PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY!;
 /**
  * Send welcome email to new users
  * @param email User's email address
- * @param name User's full name
- * @returns Promise<void>
+ * @param firstName User's first name
+ * @returns Promise<{ success: boolean; error?: string }>
  */
 export async function sendWelcomeEmail(
   email: string,
-  name: string
-): Promise<void> {
+  firstName: string
+): Promise<{ success: boolean; error?: string }> {
   const templateId = process.env.EMAILJS_WELCOME_TEMPLATE_ID;
 
   if (!templateId) {
     console.warn('EMAILJS_WELCOME_TEMPLATE_ID not configured, skipping welcome email');
-    return;
+    return { success: false, error: 'Template not configured' };
   }
 
   if (!SERVICE_ID || !PUBLIC_KEY) {
     console.error('EmailJS not configured properly');
-    throw new Error('Email service not configured');
+    return { success: false, error: 'Email service not configured' };
   }
 
   try {
@@ -40,43 +40,42 @@ export async function sendWelcomeEmail(
       templateId,
       {
         to_email: email,
-        user_name: name,
+        to_name: firstName,
         app_name: 'Tapaswe Sanskrit Pronunciation',
-        app_url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       },
       PUBLIC_KEY
     );
 
     console.log(`Welcome email sent to ${email}`);
+    return { success: true };
   } catch (error) {
     console.error('Failed to send welcome email:', error);
-    // Don't throw - welcome email failure shouldn't block signup
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: errorMessage };
   }
 }
 
 /**
  * Send password reset email with reset link
  * @param email User's email address
- * @param resetToken JWT token for password reset
- * @returns Promise<void>
+ * @param resetUrl Full URL for password reset (including token)
+ * @returns Promise<{ success: boolean; error?: string }>
  */
 export async function sendPasswordResetEmail(
   email: string,
-  resetToken: string
-): Promise<void> {
+  resetUrl: string
+): Promise<{ success: boolean; error?: string }> {
   const templateId = process.env.EMAILJS_RESET_TEMPLATE_ID;
 
   if (!templateId) {
     console.warn('EMAILJS_RESET_TEMPLATE_ID not configured, skipping reset email');
-    return;
+    return { success: false, error: 'Template not configured' };
   }
 
   if (!SERVICE_ID || !PUBLIC_KEY) {
     console.error('EmailJS not configured properly');
-    throw new Error('Email service not configured');
+    return { success: false, error: 'Email service not configured' };
   }
-
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password/confirm?token=${resetToken}`;
 
   try {
     await emailjs.send(
@@ -86,15 +85,16 @@ export async function sendPasswordResetEmail(
         to_email: email,
         reset_url: resetUrl,
         app_name: 'Tapaswe Sanskrit Pronunciation',
-        expires_in: '1 hour',
       },
       PUBLIC_KEY
     );
 
     console.log(`Password reset email sent to ${email}`);
+    return { success: true };
   } catch (error) {
     console.error('Failed to send password reset email:', error);
-    throw error; // Reset email failure should be reported
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: errorMessage };
   }
 }
 

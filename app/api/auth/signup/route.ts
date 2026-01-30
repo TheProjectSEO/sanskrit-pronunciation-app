@@ -71,10 +71,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Send welcome email (non-blocking, failures won't block signup)
-    const userName = `${validatedData.firstName} ${validatedData.lastName}`;
-    sendWelcomeEmail(newUser.email, userName).catch((error) => {
-      console.error('Failed to send welcome email:', error);
+    sendWelcomeEmail(newUser.email, validatedData.firstName).then((result) => {
+      if (!result.success) {
+        console.error('Failed to send welcome email:', result.error);
+      }
       // Don't block signup if email fails
+    }).catch((error) => {
+      console.error('Failed to send welcome email:', error);
     });
 
     // Return success with user data

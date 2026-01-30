@@ -40,47 +40,49 @@ describe('EmailJS Service', () => {
       const mockSend = vi.mocked(emailjs.send);
       mockSend.mockResolvedValueOnce({} as any);
 
-      await sendWelcomeEmail('user@example.com', 'John Doe');
+      const result = await sendWelcomeEmail('user@example.com', 'John');
 
+      expect(result.success).toBe(true);
+      expect(result.error).toBeUndefined();
       expect(mockSend).toHaveBeenCalledWith(
         'test_service_id',
         'test_welcome_template',
         {
           to_email: 'user@example.com',
-          user_name: 'John Doe',
+          to_name: 'John',
           app_name: 'Tapaswe Sanskrit Pronunciation',
-          app_url: 'http://localhost:3000',
         },
         'test_public_key'
       );
     });
 
-    it('should not throw error if template ID is missing', async () => {
+    it('should return failure if template ID is missing', async () => {
       delete process.env.EMAILJS_WELCOME_TEMPLATE_ID;
 
-      await expect(
-        sendWelcomeEmail('user@example.com', 'John Doe')
-      ).resolves.not.toThrow();
+      const result = await sendWelcomeEmail('user@example.com', 'John');
 
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Template not configured');
       expect(emailjs.send).not.toHaveBeenCalled();
     });
 
-    it('should not throw error if email sending fails', async () => {
+    it('should return failure if email sending fails', async () => {
       const mockSend = vi.mocked(emailjs.send);
       mockSend.mockRejectedValueOnce(new Error('Email send failed'));
 
-      // Should not throw - welcome email failures are non-critical
-      await expect(
-        sendWelcomeEmail('user@example.com', 'John Doe')
-      ).resolves.not.toThrow();
+      const result = await sendWelcomeEmail('user@example.com', 'John');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Email send failed');
     });
 
-    it('should throw error if service ID is missing', async () => {
+    it('should return failure if service ID is missing', async () => {
       delete process.env.EMAILJS_SERVICE_ID;
 
-      await expect(
-        sendWelcomeEmail('user@example.com', 'John Doe')
-      ).rejects.toThrow('Email service not configured');
+      const result = await sendWelcomeEmail('user@example.com', 'John');
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Email service not configured');
     });
   });
 
@@ -89,54 +91,62 @@ describe('EmailJS Service', () => {
       const mockSend = vi.mocked(emailjs.send);
       mockSend.mockResolvedValueOnce({} as any);
 
-      const resetToken = 'test_reset_token_123';
-      await sendPasswordResetEmail('user@example.com', resetToken);
+      const resetUrl = 'http://localhost:3000/reset-password/confirm?token=test_reset_token_123';
+      const result = await sendPasswordResetEmail('user@example.com', resetUrl);
 
+      expect(result.success).toBe(true);
+      expect(result.error).toBeUndefined();
       expect(mockSend).toHaveBeenCalledWith(
         'test_service_id',
         'test_reset_template',
         {
           to_email: 'user@example.com',
-          reset_url: `http://localhost:3000/reset-password/confirm?token=${resetToken}`,
+          reset_url: resetUrl,
           app_name: 'Tapaswe Sanskrit Pronunciation',
-          expires_in: '1 hour',
         },
         'test_public_key'
       );
     });
 
-    it('should throw error if email sending fails', async () => {
+    it('should return failure if email sending fails', async () => {
       const mockSend = vi.mocked(emailjs.send);
       mockSend.mockRejectedValueOnce(new Error('Email send failed'));
 
-      // Reset email failures should be reported
-      await expect(
-        sendPasswordResetEmail('user@example.com', 'test_token')
-      ).rejects.toThrow('Email send failed');
+      const result = await sendPasswordResetEmail(
+        'user@example.com',
+        'http://localhost:3000/reset-password/confirm?token=test_token'
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Email send failed');
     });
 
-    it('should not send email if template ID is missing', async () => {
+    it('should return failure if template ID is missing', async () => {
       delete process.env.EMAILJS_RESET_TEMPLATE_ID;
 
-      await sendPasswordResetEmail('user@example.com', 'test_token');
+      const result = await sendPasswordResetEmail(
+        'user@example.com',
+        'http://localhost:3000/reset-password/confirm?token=test_token'
+      );
 
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Template not configured');
       expect(emailjs.send).not.toHaveBeenCalled();
     });
 
-    it('should generate correct reset URL', async () => {
+    it('should accept full reset URL from caller', async () => {
       const mockSend = vi.mocked(emailjs.send);
       mockSend.mockResolvedValueOnce({} as any);
 
-      process.env.NEXT_PUBLIC_APP_URL = 'https://tapaswe.app';
-      const resetToken = 'abc123xyz';
+      const resetUrl = 'https://tapaswe.app/reset-password/confirm?token=abc123xyz';
+      const result = await sendPasswordResetEmail('user@example.com', resetUrl);
 
-      await sendPasswordResetEmail('user@example.com', resetToken);
-
+      expect(result.success).toBe(true);
       expect(mockSend).toHaveBeenCalledWith(
         expect.any(String),
         expect.any(String),
         expect.objectContaining({
-          reset_url: `https://tapaswe.app/reset-password/confirm?token=${resetToken}`,
+          reset_url: resetUrl,
         }),
         expect.any(String)
       );
