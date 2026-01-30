@@ -12,27 +12,35 @@ import emailjs from '@emailjs/nodejs';
 /**
  * Validate EmailJS configuration
  * @param templateId Template ID to validate
- * @returns Object with validation result and config values
+ * @returns Discriminated union - either error or valid config with guaranteed non-null values
  */
-function validateEmailConfig(templateId: string | undefined): {
-  isValid: boolean;
-  error?: string;
-  serviceId?: string;
-  publicKey?: string;
-  templateId?: string;
-} {
-  if (!templateId) {
-    return { isValid: false, error: 'Template not configured' };
-  }
+function validateEmailConfig(templateId: string | undefined):
+  | { isValid: false; error: string }
+  | { isValid: true; serviceId: string; publicKey: string; templateId: string } {
 
   const serviceId = process.env.EMAILJS_SERVICE_ID;
   const publicKey = process.env.EMAILJS_PUBLIC_KEY;
 
   if (!serviceId || !publicKey) {
-    return { isValid: false, error: 'Email service not configured' };
+    return {
+      isValid: false,
+      error: 'EmailJS not configured: missing SERVICE_ID or PUBLIC_KEY',
+    };
   }
 
-  return { isValid: true, serviceId, publicKey, templateId };
+  if (!templateId) {
+    return {
+      isValid: false,
+      error: 'EmailJS template ID not configured',
+    };
+  }
+
+  return {
+    isValid: true,
+    serviceId,
+    publicKey,
+    templateId,
+  };
 }
 
 /**
@@ -52,19 +60,18 @@ export async function sendWelcomeEmail(
     return { success: false, error: validation.error };
   }
 
-  const { serviceId, publicKey, templateId } = validation;
-
+  // TypeScript now KNOWS these values are non-null due to discriminated union
   try {
     await emailjs.send(
-      serviceId!,
-      templateId!,
+      validation.serviceId,
+      validation.templateId,
       {
         to_email: email,
         to_name: firstName,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
       {
-        publicKey: publicKey!,
+        publicKey: validation.publicKey,
       }
     );
 
@@ -94,19 +101,18 @@ export async function sendPasswordResetEmail(
     return { success: false, error: validation.error };
   }
 
-  const { serviceId, publicKey, templateId } = validation;
-
+  // TypeScript now KNOWS these values are non-null due to discriminated union
   try {
     await emailjs.send(
-      serviceId!,
-      templateId!,
+      validation.serviceId,
+      validation.templateId,
       {
         to_email: email,
         reset_url: resetUrl,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
       {
-        publicKey: publicKey!,
+        publicKey: validation.publicKey,
       }
     );
 
