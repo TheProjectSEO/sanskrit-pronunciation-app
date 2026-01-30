@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { SignJWT } from 'jose';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { sendPasswordResetEmail } from '@/lib/email/emailjs';
 
 // Schema for forgot password request validation
 const forgotPasswordSchema = z.object({
@@ -91,11 +92,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Send password reset email (will be implemented in Task 14)
-    // For now, log the reset URL to console (development only)
-    const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password/confirm?token=${token}`;
-    console.log('Password reset link:', resetUrl);
-    console.log('Token expires at:', expiresAt.toISOString());
+    // Send password reset email
+    try {
+      await sendPasswordResetEmail(normalizedEmail, token);
+      console.log('Password reset email sent to:', normalizedEmail);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+      // Still return success - don't reveal if email exists
+      // The token is stored, user can try again
+    }
 
     // Return success response (don't reveal if email exists)
     return NextResponse.json(

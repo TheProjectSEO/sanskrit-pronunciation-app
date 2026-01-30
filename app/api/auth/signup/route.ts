@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { hashPassword, validatePasswordStrength } from '@/lib/auth/password';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { sendWelcomeEmail } from '@/lib/email/emailjs';
 
 // Schema for signup request validation
 const signupSchema = z.object({
@@ -68,6 +69,13 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Send welcome email (non-blocking, failures won't block signup)
+    const userName = `${validatedData.firstName} ${validatedData.lastName}`;
+    sendWelcomeEmail(newUser.email, userName).catch((error) => {
+      console.error('Failed to send welcome email:', error);
+      // Don't block signup if email fails
+    });
 
     // Return success with user data
     return NextResponse.json(
