@@ -1,4 +1,4 @@
-import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/nodejs';
 
 /**
  * EmailJS configuration
@@ -9,8 +9,31 @@ import emailjs from '@emailjs/browser';
  * - EMAILJS_RESET_TEMPLATE_ID
  */
 
-const SERVICE_ID = process.env.EMAILJS_SERVICE_ID!;
-const PUBLIC_KEY = process.env.EMAILJS_PUBLIC_KEY!;
+/**
+ * Validate EmailJS configuration
+ * @param templateId Template ID to validate
+ * @returns Object with validation result and config values
+ */
+function validateEmailConfig(templateId: string | undefined): {
+  isValid: boolean;
+  error?: string;
+  serviceId?: string;
+  publicKey?: string;
+  templateId?: string;
+} {
+  if (!templateId) {
+    return { isValid: false, error: 'Template not configured' };
+  }
+
+  const serviceId = process.env.EMAILJS_SERVICE_ID;
+  const publicKey = process.env.EMAILJS_PUBLIC_KEY;
+
+  if (!serviceId || !publicKey) {
+    return { isValid: false, error: 'Email service not configured' };
+  }
+
+  return { isValid: true, serviceId, publicKey, templateId };
+}
 
 /**
  * Send welcome email to new users
@@ -22,31 +45,30 @@ export async function sendWelcomeEmail(
   email: string,
   firstName: string
 ): Promise<{ success: boolean; error?: string }> {
-  const templateId = process.env.EMAILJS_WELCOME_TEMPLATE_ID;
+  const validation = validateEmailConfig(process.env.EMAILJS_WELCOME_TEMPLATE_ID);
 
-  if (!templateId) {
+  if (!validation.isValid) {
     console.warn('EMAILJS_WELCOME_TEMPLATE_ID not configured, skipping welcome email');
-    return { success: false, error: 'Template not configured' };
+    return { success: false, error: validation.error };
   }
 
-  if (!SERVICE_ID || !PUBLIC_KEY) {
-    console.error('EmailJS not configured properly');
-    return { success: false, error: 'Email service not configured' };
-  }
+  const { serviceId, publicKey, templateId } = validation;
 
   try {
     await emailjs.send(
-      SERVICE_ID,
-      templateId,
+      serviceId!,
+      templateId!,
       {
         to_email: email,
         to_name: firstName,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
-      PUBLIC_KEY
+      {
+        publicKey: publicKey!,
+      }
     );
 
-    console.log(`Welcome email sent to ${email}`);
+    console.log('Welcome email sent successfully');
     return { success: true };
   } catch (error) {
     console.error('Failed to send welcome email:', error);
@@ -65,31 +87,30 @@ export async function sendPasswordResetEmail(
   email: string,
   resetUrl: string
 ): Promise<{ success: boolean; error?: string }> {
-  const templateId = process.env.EMAILJS_RESET_TEMPLATE_ID;
+  const validation = validateEmailConfig(process.env.EMAILJS_RESET_TEMPLATE_ID);
 
-  if (!templateId) {
+  if (!validation.isValid) {
     console.warn('EMAILJS_RESET_TEMPLATE_ID not configured, skipping reset email');
-    return { success: false, error: 'Template not configured' };
+    return { success: false, error: validation.error };
   }
 
-  if (!SERVICE_ID || !PUBLIC_KEY) {
-    console.error('EmailJS not configured properly');
-    return { success: false, error: 'Email service not configured' };
-  }
+  const { serviceId, publicKey, templateId } = validation;
 
   try {
     await emailjs.send(
-      SERVICE_ID,
-      templateId,
+      serviceId!,
+      templateId!,
       {
         to_email: email,
         reset_url: resetUrl,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
-      PUBLIC_KEY
+      {
+        publicKey: publicKey!,
+      }
     );
 
-    console.log(`Password reset email sent to ${email}`);
+    console.log('Password reset email sent successfully');
     return { success: true };
   } catch (error) {
     console.error('Failed to send password reset email:', error);

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import emailjs from '@emailjs/browser';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import emailjs from '@emailjs/nodejs';
 import {
   sendWelcomeEmail,
   sendPasswordResetEmail,
@@ -7,7 +7,7 @@ import {
 } from '../emailjs';
 
 // Mock emailjs
-vi.mock('@emailjs/browser', () => ({
+vi.mock('@emailjs/nodejs', () => ({
   default: {
     send: vi.fn(),
   },
@@ -52,7 +52,9 @@ describe('EmailJS Service', () => {
           to_name: 'John',
           app_name: 'Tapaswe Sanskrit Pronunciation',
         },
-        'test_public_key'
+        {
+          publicKey: 'test_public_key',
+        }
       );
     });
 
@@ -104,7 +106,9 @@ describe('EmailJS Service', () => {
           reset_url: resetUrl,
           app_name: 'Tapaswe Sanskrit Pronunciation',
         },
-        'test_public_key'
+        {
+          publicKey: 'test_public_key',
+        }
       );
     });
 
@@ -148,7 +152,9 @@ describe('EmailJS Service', () => {
         expect.objectContaining({
           reset_url: resetUrl,
         }),
-        expect.any(String)
+        expect.objectContaining({
+          publicKey: expect.any(String),
+        })
       );
     });
   });
