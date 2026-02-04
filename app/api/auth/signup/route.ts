@@ -56,10 +56,12 @@ export async function POST(request: NextRequest) {
       .insert({
         email: validatedData.email.toLowerCase(),
         password_hash: hashedPassword,
-        name: `${validatedData.firstName} ${validatedData.lastName}`,
-        auth_provider: 'email',
+        first_name: validatedData.firstName,
+        last_name: validatedData.lastName,
+        role: 'user',
+        is_active: true,
       })
-      .select('id, email, name')
+      .select('id, email, first_name, last_name')
       .single();
 
     if (createError) {
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
         user: {
           id: newUser.id,
           email: newUser.email,
-          name: newUser.name,
+          name: `${newUser.first_name} ${newUser.last_name}`.trim(),
         },
       },
       { status: 201 }
