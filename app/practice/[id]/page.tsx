@@ -14,6 +14,14 @@ interface Mantra {
   critical_sounds: string[];
 }
 
+interface ErrorDetail {
+  type: 'substitution' | 'omission' | 'addition' | 'mispronunciation';
+  expected?: string;
+  actual?: string;
+  explanation_hindi: string;
+  explanation_english: string;
+}
+
 interface AnalysisResult {
   overall_score: number;
   feedback: string;
@@ -24,6 +32,8 @@ interface AnalysisResult {
   }[];
   hindi_feedback?: string;
   user_transcription?: string; // What the user actually said
+  detailed_errors?: ErrorDetail[]; // Specific error breakdown
+  practice_suggestions?: string[]; // Tips from the guru
 }
 
 export default function PracticePage() {
@@ -627,10 +637,33 @@ function AnalysisDisplay({
       ? 'text-yellow-500'
       : 'text-red-500';
 
+  const scoreBgColor =
+    result.overall_score >= 80
+      ? 'bg-green-50 border-green-200'
+      : result.overall_score >= 60
+      ? 'bg-yellow-50 border-yellow-200'
+      : 'bg-red-50 border-red-200';
+
+  // Helper to get error type icon and color
+  const getErrorStyle = (type: string) => {
+    switch (type) {
+      case 'substitution':
+        return { icon: '↔', color: 'text-red-600', bg: 'bg-red-50', label: 'प्रतिस्थापन' };
+      case 'omission':
+        return { icon: '−', color: 'text-orange-600', bg: 'bg-orange-50', label: 'लोप' };
+      case 'addition':
+        return { icon: '+', color: 'text-blue-600', bg: 'bg-blue-50', label: 'अतिरिक्त' };
+      case 'mispronunciation':
+        return { icon: '~', color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'उच्चारण दोष' };
+      default:
+        return { icon: '?', color: 'text-gray-600', bg: 'bg-gray-50', label: 'त्रुटि' };
+    }
+  };
+
   return (
     <div className="space-y-5">
-      {/* Score */}
-      <div>
+      {/* Score with visual indicator */}
+      <div className={`rounded-xl p-4 border ${scoreBgColor}`}>
         <div className={`text-5xl font-bold ${scoreColor}`}>
           {result.overall_score}%
         </div>
@@ -659,71 +692,154 @@ function AnalysisDisplay({
         </div>
       </div>
 
-      {/* Word Analysis */}
-      <div className="text-left space-y-2">
-        <p className="text-sm font-medium text-gray-700">Word by Word:</p>
-        <div className="flex flex-wrap gap-2">
-          {result.word_analysis.map((word, index) => (
-            <span
-              key={index}
-              className={`px-3 py-1 rounded-full text-sm font-medium ${
-                word.status === 'correct'
-                  ? 'bg-green-100 text-green-700'
-                  : word.status === 'needs_work'
-                  ? 'bg-yellow-100 text-yellow-700'
-                  : 'bg-red-100 text-red-700'
-              }`}
-              title={word.feedback}
-            >
-              {word.word}
-              {word.status === 'correct' ? ' ✓' : word.status === 'needs_work' ? ' ~' : ' ✗'}
-            </span>
-          ))}
+      {/* Detailed Errors Section - The key improvement */}
+      {result.detailed_errors && result.detailed_errors.length > 0 && (
+        <div className="text-left space-y-3">
+          <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <span className="text-lg">📋</span> विस्तृत विश्लेषण (Detailed Analysis):
+          </p>
+          <div className="space-y-2">
+            {result.detailed_errors.map((error, index) => {
+              const style = getErrorStyle(error.type);
+              return (
+                <div
+                  key={index}
+                  className={`${style.bg} border border-gray-200 rounded-lg p-3`}
+                >
+                  <div className="flex items-start gap-2">
+                    <span className={`${style.color} font-bold text-lg w-6 h-6 flex items-center justify-center rounded-full bg-white border`}>
+                      {style.icon}
+                    </span>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs font-medium ${style.color} uppercase`}>
+                          {style.label}
+                        </span>
+                        {error.expected && error.actual && (
+                          <span className="text-xs text-gray-500">
+                            "{error.actual}" → "{error.expected}"
+                          </span>
+                        )}
+                        {error.expected && !error.actual && (
+                          <span className="text-xs text-gray-500">
+                            Missing: "{error.expected}"
+                          </span>
+                        )}
+                        {!error.expected && error.actual && (
+                          <span className="text-xs text-gray-500">
+                            Extra: "{error.actual}"
+                          </span>
+                        )}
+                      </div>
+                      <p className={`${style.color} text-sm font-medium`}>
+                        {error.explanation_hindi}
+                      </p>
+                      <p className="text-gray-500 text-xs mt-1">
+                        {error.explanation_english}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Hindi Feedback with TTS */}
+      {/* Word Analysis - Visual chips */}
+      {result.word_analysis && result.word_analysis.length > 0 && (
+        <div className="text-left space-y-2">
+          <p className="text-sm font-medium text-gray-700">शब्द विश्लेषण (Word by Word):</p>
+          <div className="flex flex-wrap gap-2">
+            {result.word_analysis.map((word, index) => (
+              <div
+                key={index}
+                className={`px-3 py-2 rounded-lg text-sm font-medium border ${
+                  word.status === 'correct'
+                    ? 'bg-green-50 text-green-700 border-green-200'
+                    : word.status === 'needs_work'
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                    : 'bg-red-50 text-red-700 border-red-200'
+                }`}
+              >
+                <div className="flex items-center gap-1">
+                  <span>{word.word}</span>
+                  <span>
+                    {word.status === 'correct' ? '✓' : word.status === 'needs_work' ? '~' : '✗'}
+                  </span>
+                </div>
+                {word.feedback && (
+                  <p className="text-xs opacity-80 mt-1">{word.feedback}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hindi Feedback with TTS - Main guru feedback */}
       {result.hindi_feedback && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 text-left">
-          <div className="flex items-start justify-between gap-2">
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl p-4 text-left">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl">🙏</div>
             <div className="flex-1">
-              <p className="text-orange-800 text-lg">{result.hindi_feedback}</p>
+              <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-2">
+                गुरु का मार्गदर्शन (Teacher's Guidance)
+              </p>
+              <p className="text-orange-900 text-lg leading-relaxed">{result.hindi_feedback}</p>
               {isTTSLoading && (
-                <p className="text-orange-500 text-sm mt-1 animate-pulse">
-                  Loading audio...
+                <p className="text-orange-500 text-sm mt-2 animate-pulse">
+                  ऑडियो लोड हो रहा है...
                 </p>
               )}
               {isTTSPlaying && (
-                <p className="text-orange-600 text-sm mt-1 flex items-center gap-1">
-                  <span className="animate-pulse">🔊</span> Playing...
+                <p className="text-orange-600 text-sm mt-2 flex items-center gap-1">
+                  <span className="animate-pulse">🔊</span> सुन रहे हैं...
                 </p>
               )}
             </div>
             <button
               onClick={onPlayFeedback}
               disabled={isTTSLoading || isTTSPlaying}
-              className={`p-2 rounded-full transition-colors flex-shrink-0 ${
+              className={`p-3 rounded-full transition-all flex-shrink-0 shadow-md ${
                 isTTSLoading
                   ? 'bg-orange-300 cursor-wait'
                   : isTTSPlaying
-                  ? 'bg-orange-600 animate-pulse'
-                  : 'bg-orange-500 hover:bg-orange-600'
+                  ? 'bg-orange-600 animate-pulse scale-110'
+                  : 'bg-orange-500 hover:bg-orange-600 hover:scale-105'
               } text-white`}
               title="सुनें"
             >
-              {isTTSLoading ? '⏳' : isTTSPlaying ? '🔊' : '🔊'}
+              🔊
             </button>
           </div>
         </div>
       )}
 
+      {/* Practice Suggestions */}
+      {result.practice_suggestions && result.practice_suggestions.length > 0 && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 text-left">
+          <p className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
+            <span>💡</span> अभ्यास सुझाव (Practice Tips):
+          </p>
+          <ul className="space-y-1">
+            {result.practice_suggestions.map((tip, index) => (
+              <li key={index} className="text-purple-700 text-sm flex items-start gap-2">
+                <span className="text-purple-400">•</span>
+                <span>{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Actions */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 pt-2">
         <button
           onClick={onRetry}
-          className="px-6 py-3 bg-purple-600 text-white rounded-full hover:bg-purple-700 transition-colors font-medium"
+          className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-full hover:from-purple-700 hover:to-purple-800 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
         >
-          Try Again
+          फिर से कोशिश करें (Try Again)
         </button>
       </div>
     </div>
