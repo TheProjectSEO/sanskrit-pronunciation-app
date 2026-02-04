@@ -57,21 +57,22 @@ export async function sendWelcomeEmail(
 
   if (!validation.isValid) {
     console.warn('EMAILJS_WELCOME_TEMPLATE_ID not configured, skipping welcome email');
-    return { success: false, error: validation.error };
+    return { success: false, error: (validation as { isValid: false; error: string }).error };
   }
 
   // TypeScript now KNOWS these values are non-null due to discriminated union
+  const { serviceId, publicKey, templateId } = validation;
   try {
     await emailjs.send(
-      validation.serviceId,
-      validation.templateId,
+      serviceId,
+      templateId,
       {
         to_email: email,
         to_name: firstName,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
       {
-        publicKey: validation.publicKey,
+        publicKey,
       }
     );
 
@@ -98,21 +99,22 @@ export async function sendPasswordResetEmail(
 
   if (!validation.isValid) {
     console.warn('EMAILJS_RESET_TEMPLATE_ID not configured, skipping reset email');
-    return { success: false, error: validation.error };
+    return { success: false, error: (validation as { isValid: false; error: string }).error };
   }
 
   // TypeScript now KNOWS these values are non-null due to discriminated union
+  const { serviceId, publicKey, templateId } = validation;
   try {
     await emailjs.send(
-      validation.serviceId,
-      validation.templateId,
+      serviceId,
+      templateId,
       {
         to_email: email,
         reset_url: resetUrl,
         app_name: 'Tapaswe Sanskrit Pronunciation',
       },
       {
-        publicKey: validation.publicKey,
+        publicKey,
       }
     );
 

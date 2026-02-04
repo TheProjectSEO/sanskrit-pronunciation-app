@@ -27,7 +27,8 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 const openai = new OpenAI({ apiKey: openaiKey });
 
 async function transcribeAudio(audioBuffer: Buffer, filename: string) {
-  const file = new File([audioBuffer], filename, {
+  const uint8Array = new Uint8Array(audioBuffer);
+  const file = new File([uint8Array], filename, {
     type: filename.endsWith('.m4a') ? 'audio/mp4' : 'audio/wav',
   });
 

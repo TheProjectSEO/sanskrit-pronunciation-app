@@ -25,8 +25,9 @@ export async function transcribeAudio(
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
 
-  // Create a File object from the buffer
-  const file = new File([audioBuffer], filename, {
+  // Create a File object from the buffer (convert to Uint8Array for type compatibility)
+  const uint8Array = new Uint8Array(audioBuffer);
+  const file = new File([uint8Array], filename, {
     type: getAudioMimeType(filename),
   });
 

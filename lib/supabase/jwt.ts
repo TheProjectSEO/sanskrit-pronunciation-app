@@ -11,7 +11,7 @@ import { SignJWT, jwtVerify } from 'jose';
 export interface MintJwtOptions {
   userId: string;
   email: string;
-  userRole?: 'admin' | 'user';
+  userRole?: 'admin' | 'user' | 'instructor';
   expiresInSeconds?: number; // Default 600 (10 minutes)
 }
 
