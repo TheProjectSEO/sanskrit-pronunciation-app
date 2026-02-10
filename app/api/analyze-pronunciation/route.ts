@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { toFile } from 'openai';
+import { getLanguagePromptInstruction } from '@/lib/constants/languages';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File | null;
     const referenceText = formData.get('reference_text') as string;
+    const feedbackLanguage = (formData.get('feedback_language') as string) || 'hindi';
 
     if (!audioFile) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use the advanced analysis prompt
-    const analysis = await analyzeWithIntelligentFeedback(referenceText, userText);
+    const analysis = await analyzeWithIntelligentFeedback(referenceText, userText, feedbackLanguage);
 
     return NextResponse.json({
       overall_score: analysis.overall_score,
@@ -142,15 +144,20 @@ export async function POST(request: NextRequest) {
  */
 async function analyzeWithIntelligentFeedback(
   referenceText: string,
-  userText: string
+  userText: string,
+  feedbackLanguage: string = 'hindi'
 ): Promise<AnalysisResult> {
+
+  const languageInstruction = getLanguagePromptInstruction(feedbackLanguage);
 
   const systemPrompt = `You are an expert Sanskrit teacher (संस्कृत गुरु) with deep knowledge of:
 - Sanskrit phonetics (वर्णमाला) including proper articulation points (स्थान) and methods (प्रयत्न)
 - Common pronunciation mistakes made by Hindi speakers and foreigners
 - The spiritual and linguistic importance of precise mantra pronunciation
 
-Your role is to analyze a student's mantra recitation and provide SPECIFIC, HELPFUL feedback in Hindi.
+Your role is to analyze a student's mantra recitation and provide SPECIFIC, HELPFUL feedback.
+
+LANGUAGE INSTRUCTION: ${languageInstruction}
 
 CRITICAL INSTRUCTION: You must identify EXACTLY what the student said wrong and explain it clearly.
 Do NOT give generic feedback. Be SPECIFIC about substitutions, omissions, and errors.`;
@@ -190,15 +197,17 @@ Identify ALL errors by comparing the two texts:
 - If student was mostly correct with minor issues: Score 70-90
 - Near perfect: Score 90-100
 
-### 3. HINDI FEEDBACK REQUIREMENTS
-The hindi_feedback must be:
-- Written in Devanagari script ONLY
-- Sound like a patient, knowledgeable Sanskrit teacher
+### 3. FEEDBACK LANGUAGE REQUIREMENTS
+The hindi_feedback field must be:
+- Written in the language specified in the system prompt (${feedbackLanguage})
+- Sound like a patient, knowledgeable Sanskrit teacher speaking in that language
 - Be SPECIFIC - mention exact words that were wrong
 - Include at least ONE specific correction
 - Be encouraging but honest
 - Maximum 3-4 sentences
-- Use natural Hindi, not robotic phrases
+- Use natural language, not robotic phrases
+- The explanation_hindi fields in detailed_errors should also be in ${feedbackLanguage}
+- The practice_suggestions should also be in ${feedbackLanguage}
 
 **Good Example:**
 "बेटा, आपने मंत्र की शुरुआत अच्छी की, लेकिन 'कृष्ण' की जगह 'वासुदेव' बोल दिया। याद रखें - हरे कृष्ण मंत्र में 'राम' और 'कृष्ण' दोनों आते हैं। 'राम' शब्द आपने बोला ही नहीं। एक बार फिर ध्यान से सुनें और दोहराएं।"

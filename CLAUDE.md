@@ -226,12 +226,12 @@ Stored in `.env.local` (gitignored):
 #### Feature 4: Multilingual Feedback [P1]
 **Goal:** Users choose feedback language (Hindi, English, Kannada, Tamil, Telugu). Guru feedback generated in chosen language.
 
-- [ ] **4.1** Migration `005_user_preferences.sql` - user_preferences table
-- [ ] **4.2** Run migration on Supabase
-- [ ] **4.3** Preferences API `app/api/user/preferences/route.ts`
-- [ ] **4.4** Language constants `lib/constants/languages.ts`
-- [ ] **4.5** Modify analysis API for multilingual prompts
-- [ ] **4.6** Language selector on practice page
+- [x] **4.1** Migration `005_user_preferences.sql` - user_preferences table
+- [x] **4.2** Run migration on Supabase (applied via MCP)
+- [x] **4.3** Preferences API `app/api/user/preferences/route.ts`
+- [x] **4.4** Language constants `lib/constants/languages.ts`
+- [x] **4.5** Modify analysis API for multilingual prompts
+- [x] **4.6** Language selector on practice page
 - [ ] **4.7** Indic font support if needed
 
 **New files:** `supabase/migrations/005_user_preferences.sql`, `app/api/user/preferences/route.ts`, `lib/constants/languages.ts`

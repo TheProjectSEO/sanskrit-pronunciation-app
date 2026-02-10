@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { playTTS } from '@/lib/audio/tts-player';
+import { FEEDBACK_LANGUAGES, type FeedbackLanguage } from '@/lib/constants/languages';
 
 interface Mantra {
   id: string;
@@ -71,6 +72,32 @@ export default function PracticePage() {
   const [playingSound, setPlayingSound] = useState<string | null>(null);
   const [isTTSLoading, setIsTTSLoading] = useState(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
+
+  // Language preference
+  const [feedbackLanguage, setFeedbackLanguage] = useState<FeedbackLanguage>('hindi');
+
+  // Fetch language preference
+  useEffect(() => {
+    if (session?.user) {
+      fetch('/api/user/preferences')
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data?.feedback_language) setFeedbackLanguage(data.feedback_language);
+        })
+        .catch(() => {});
+    }
+  }, [session]);
+
+  const handleLanguageChange = async (lang: FeedbackLanguage) => {
+    setFeedbackLanguage(lang);
+    if (session?.user) {
+      fetch('/api/user/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback_language: lang }),
+      }).catch(() => {});
+    }
+  };
 
   // Fetch mantra
   useEffect(() => {
@@ -271,6 +298,7 @@ export default function PracticePage() {
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('mantra_id', mantra.id);
       formData.append('reference_text', mantra.reference_text_roman);
+      formData.append('feedback_language', feedbackLanguage);
 
       const response = await fetch('/api/analyze-pronunciation', {
         method: 'POST',
@@ -516,6 +544,22 @@ export default function PracticePage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Language Selector */}
+        <div className="flex items-center gap-2 justify-end">
+          <span className="text-xs text-gray-500">Feedback in:</span>
+          <select
+            value={feedbackLanguage}
+            onChange={(e) => handleLanguageChange(e.target.value as FeedbackLanguage)}
+            className="text-sm px-3 py-1.5 border border-gray-200 rounded-full bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {FEEDBACK_LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Recording Section */}
