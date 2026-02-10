@@ -255,15 +255,17 @@ Stored in `.env.local` (gitignored):
 #### Feature 6: Per-Verse Practice [P3 - Waiting for Arun's Designs]
 **Goal:** Break long mantras into verses. Users pick any verse to practice separately.
 
-- [ ] **6.1** Migration `006_mantra_verses.sql` - mantra_verses table
-- [ ] **6.2** Run migration on Supabase
-- [ ] **6.3** Verse management API
-- [ ] **6.4** Public verse API
+- [x] **6.1** Migration `006_mantra_verses.sql` - mantra_verses table
+- [x] **6.2** Run migration on Supabase (applied via MCP)
+- [x] **6.3** Verse management API `app/api/instructor/mantras/[id]/verses/route.ts` (GET/POST/PATCH/DELETE)
+- [x] **6.4** Public verse API `app/api/mantras/[id]/verses/route.ts`
 - [ ] **6.5** Verse management UI for instructors
 - [ ] **6.6** Verse selector on practice page
 - [ ] **6.7** Verse count badge on homepage cards
 
-**Status:** Blocked - waiting for UI designs from Arun
+**Status:** DB + API done. UI blocked - waiting for designs from Arun
+
+**New files:** `supabase/migrations/006_mantra_verses.sql`, `app/api/instructor/mantras/[id]/verses/route.ts`, `app/api/mantras/[id]/verses/route.ts`
 
 ---
 
