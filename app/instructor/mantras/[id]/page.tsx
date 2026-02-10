@@ -5,6 +5,12 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 
+interface Deity {
+  id: string;
+  name: string;
+  name_devanagari: string | null;
+}
+
 interface Mantra {
   id: string;
   name: string;
@@ -15,6 +21,7 @@ interface Mantra {
   text_latin: string | null;
   text_devanagari: string | null;
   audio_url: string | null;
+  deity_id: string | null;
   created_at: string;
   processing_status?: string;
   processing_error?: string;
@@ -31,6 +38,13 @@ export default function MantraDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [reprocessing, setReprocessing] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDevanagari, setEditDevanagari] = useState('');
+  const [editRoman, setEditRoman] = useState('');
+  const [editDeityId, setEditDeityId] = useState<string | null>(null);
+  const [deities, setDeities] = useState<Deity[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -41,6 +55,7 @@ export default function MantraDetailPage() {
 
     if (status === 'authenticated' && mantraId) {
       fetchMantra();
+      fetchDeities();
     }
   }, [status, mantraId]);
 
@@ -57,6 +72,18 @@ export default function MantraDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to load mantra');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDeities = async () => {
+    try {
+      const response = await fetch('/api/instructor/deities');
+      if (response.ok) {
+        const data = await response.json();
+        setDeities(data.deities || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch deities:', err);
     }
   };
 
@@ -103,6 +130,61 @@ export default function MantraDetailPage() {
       setError(err instanceof Error ? err.message : 'Publishing failed');
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (!mantra) return;
+    setEditName(mantra.name || '');
+    setEditDevanagari(mantra.reference_text_devanagari || mantra.text_devanagari || '');
+    setEditRoman(mantra.reference_text_roman || mantra.text_latin || '');
+    setEditDeityId(mantra.deity_id);
+    setEditing(true);
+    setError(null);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const handleSave = async () => {
+    if (!mantra) return;
+
+    const updates: Record<string, string | null> = {};
+    if (editName !== mantra.name) updates.name = editName;
+    if (editDevanagari !== (mantra.reference_text_devanagari || mantra.text_devanagari || ''))
+      updates.reference_text_devanagari = editDevanagari;
+    if (editRoman !== (mantra.reference_text_roman || mantra.text_latin || ''))
+      updates.reference_text_roman = editRoman;
+    if (editDeityId !== mantra.deity_id)
+      updates.deity_id = editDeityId;
+
+    if (Object.keys(updates).length === 0) {
+      setEditing(false);
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError(null);
+      const response = await fetch(`/api/instructor/mantras/${mantraId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save');
+      }
+
+      await fetchMantra();
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -160,9 +242,26 @@ export default function MantraDetailPage() {
           >
             <span>←</span> Back to All Mantras
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">{mantra.name}</h1>
+          {editing ? (
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="text-2xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+          ) : (
+            <h1 className="text-2xl font-bold text-gray-900">{mantra.name}</h1>
+          )}
         </div>
         <div className="flex items-center gap-3">
+          {!editing && (
+            <button
+              onClick={startEditing}
+              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 font-medium text-sm"
+            >
+              Edit
+            </button>
+          )}
           <span
             className={`px-3 py-1 rounded-full text-sm font-medium ${
               mantra.status === 'published'
@@ -174,6 +273,15 @@ export default function MantraDetailPage() {
           </span>
         </div>
       </div>
+
+      {/* Published Warning */}
+      {editing && mantra.status === 'published' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+          <p className="text-yellow-700 text-sm">
+            This mantra is published. Changes will be visible to students immediately.
+          </p>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -227,24 +335,93 @@ export default function MantraDetailPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Devanagari Script
             </label>
-            <div className="p-4 bg-orange-50 rounded-lg text-xl font-medium text-gray-900">
-              {mantra.reference_text_devanagari || mantra.text_devanagari || (
-                <span className="text-gray-400 italic">Not transcribed yet</span>
-              )}
-            </div>
+            {editing ? (
+              <textarea
+                value={editDevanagari}
+                onChange={(e) => setEditDevanagari(e.target.value)}
+                rows={3}
+                className="w-full p-4 bg-orange-50 border border-orange-200 rounded-lg text-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+              />
+            ) : (
+              <div className="p-4 bg-orange-50 rounded-lg text-xl font-medium text-gray-900">
+                {mantra.reference_text_devanagari || mantra.text_devanagari || (
+                  <span className="text-gray-400 italic">Not transcribed yet</span>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Roman Script (IAST)
             </label>
-            <div className="p-4 bg-gray-50 rounded-lg text-lg text-gray-900">
-              {mantra.reference_text_roman || mantra.text_latin || (
-                <span className="text-gray-400 italic">Not transcribed yet</span>
-              )}
-            </div>
+            {editing ? (
+              <textarea
+                value={editRoman}
+                onChange={(e) => setEditRoman(e.target.value)}
+                rows={3}
+                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+              />
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg text-lg text-gray-900">
+                {mantra.reference_text_roman || mantra.text_latin || (
+                  <span className="text-gray-400 italic">Not transcribed yet</span>
+                )}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Deity Assignment */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Deity
+          </label>
+          {editing ? (
+            <select
+              value={editDeityId || ''}
+              onChange={(e) => setEditDeityId(e.target.value || null)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+            >
+              <option value="">No deity assigned</option>
+              {deities.map((deity) => (
+                <option key={deity.id} value={deity.id}>
+                  {deity.name}{deity.name_devanagari ? ` (${deity.name_devanagari})` : ''}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-900">
+              {mantra.deity_id && deities.length > 0
+                ? (() => {
+                    const d = deities.find((d) => d.id === mantra.deity_id);
+                    return d ? `${d.name}${d.name_devanagari ? ` (${d.name_devanagari})` : ''}` : 'Unknown deity';
+                  })()
+                : <span className="text-gray-400 italic">No deity assigned</span>
+              }
+            </div>
+          )}
+        </div>
+
+        {/* Save/Cancel buttons */}
+        {editing && (
+          <div className="flex gap-3 mt-4 pt-4 border-t border-gray-200">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+            <button
+              onClick={cancelEditing}
+              disabled={saving}
+              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

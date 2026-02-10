@@ -15,6 +15,7 @@ export default function InstructorLayout({
 
   const navLinks = [
     { href: '/instructor/mantras', label: 'Mantras', icon: '📿' },
+    { href: '/instructor/deities', label: 'Deities', icon: '🙏' },
     { href: '/instructor/upload', label: 'Upload New', icon: '+' },
   ];
 

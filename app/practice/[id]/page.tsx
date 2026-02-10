@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { playTTS } from '@/lib/audio/tts-player';
 
 interface Mantra {
   id: string;
@@ -630,6 +631,25 @@ function AnalysisDisplay({
   onRetry: () => void;
   onPlayFeedback: () => void;
 }) {
+  const [wordTTSState, setWordTTSState] = useState<Record<string, 'loading' | 'playing'>>({});
+
+  const handlePlayWord = async (word: string) => {
+    const key = word;
+    setWordTTSState((prev) => ({ ...prev, [key]: 'loading' }));
+    try {
+      setWordTTSState((prev) => ({ ...prev, [key]: 'playing' }));
+      await playTTS(word);
+    } catch (err) {
+      console.error('TTS error for word:', word, err);
+    } finally {
+      setWordTTSState((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  };
+
   const scoreColor =
     result.overall_score >= 80
       ? 'text-green-500'
@@ -716,13 +736,33 @@ function AnalysisDisplay({
                           {style.label}
                         </span>
                         {error.expected && error.actual && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
                             "{error.actual}" → "{error.expected}"
+                            <button
+                              onClick={() => handlePlayWord(error.expected!)}
+                              disabled={!!wordTTSState[error.expected!]}
+                              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-orange-400 hover:bg-orange-50 transition-colors flex-shrink-0"
+                              title={`Listen: ${error.expected}`}
+                            >
+                              <span className={`text-xs ${wordTTSState[error.expected!] === 'playing' ? 'animate-pulse' : ''}`}>
+                                {wordTTSState[error.expected!] === 'loading' ? '...' : '🔊'}
+                              </span>
+                            </button>
                           </span>
                         )}
                         {error.expected && !error.actual && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
                             Missing: "{error.expected}"
+                            <button
+                              onClick={() => handlePlayWord(error.expected!)}
+                              disabled={!!wordTTSState[error.expected!]}
+                              className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-orange-400 hover:bg-orange-50 transition-colors flex-shrink-0"
+                              title={`Listen: ${error.expected}`}
+                            >
+                              <span className={`text-xs ${wordTTSState[error.expected!] === 'playing' ? 'animate-pulse' : ''}`}>
+                                {wordTTSState[error.expected!] === 'loading' ? '...' : '🔊'}
+                              </span>
+                            </button>
                           </span>
                         )}
                         {!error.expected && error.actual && (
@@ -767,6 +807,18 @@ function AnalysisDisplay({
                   <span>
                     {word.status === 'correct' ? '✓' : word.status === 'needs_work' ? '~' : '✗'}
                   </span>
+                  {word.status !== 'correct' && (
+                    <button
+                      onClick={() => handlePlayWord(word.word)}
+                      disabled={!!wordTTSState[word.word]}
+                      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white border border-gray-300 hover:border-orange-400 hover:bg-orange-50 transition-colors ml-1 flex-shrink-0"
+                      title={`Listen: ${word.word}`}
+                    >
+                      <span className={`text-xs ${wordTTSState[word.word] === 'playing' ? 'animate-pulse' : ''}`}>
+                        {wordTTSState[word.word] === 'loading' ? '...' : '🔊'}
+                      </span>
+                    </button>
+                  )}
                 </div>
                 {word.feedback && (
                   <p className="text-xs opacity-80 mt-1">{word.feedback}</p>

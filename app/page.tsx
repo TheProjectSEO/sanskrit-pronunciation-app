@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
+interface Deity {
+  id: string;
+  name: string;
+  name_devanagari: string | null;
+}
+
 interface Mantra {
   id: string;
   name: string;
@@ -12,20 +18,41 @@ interface Mantra {
   reference_audio_url: string;
   difficulty_level: number;
   category: string | null;
+  deity_id: string | null;
 }
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const [mantras, setMantras] = useState<Mantra[]>([]);
+  const [deities, setDeities] = useState<Deity[]>([]);
+  const [selectedDeity, setSelectedDeity] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMantras();
+    fetchDeities();
   }, []);
 
-  const fetchMantras = async () => {
+  useEffect(() => {
+    fetchMantras(selectedDeity);
+  }, [selectedDeity]);
+
+  const fetchDeities = async () => {
     try {
-      const response = await fetch('/api/mantras');
+      const response = await fetch('/api/deities');
+      if (response.ok) {
+        const data = await response.json();
+        setDeities(data.deities || []);
+      }
+    } catch (err) {
+      console.error('Error fetching deities:', err);
+    }
+  };
+
+  const fetchMantras = async (deityId: string | null) => {
+    try {
+      setLoading(true);
+      const url = deityId ? `/api/mantras?deity_id=${deityId}` : '/api/mantras';
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setMantras(data.mantras || []);
@@ -103,6 +130,35 @@ export default function HomePage() {
           <h2 className="text-lg font-bold text-gray-900">Practice Mantras</h2>
           <span className="text-sm text-gray-500">{mantras.length} available</span>
         </div>
+
+        {/* Deity Filter Tabs */}
+        {deities.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1">
+            <button
+              onClick={() => setSelectedDeity(null)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedDeity === null
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+              }`}
+            >
+              All
+            </button>
+            {deities.map((deity) => (
+              <button
+                key={deity.id}
+                onClick={() => setSelectedDeity(deity.id)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedDeity === deity.id
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                }`}
+              >
+                {deity.name_devanagari || deity.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Mantras List */}
         {loading ? (

@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/service';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = getServiceSupabase();
+    const { searchParams } = new URL(request.url);
+    const deityId = searchParams.get('deity_id');
 
     // Fetch published mantras for users
-    const { data: mantras, error } = await supabase
+    let query = supabase
       .from('mantras')
       .select(`
         id,
@@ -15,9 +17,16 @@ export async function GET() {
         reference_text_roman,
         reference_audio_url,
         difficulty_level,
-        category
+        category,
+        deity_id
       `)
-      .eq('status', 'published')
+      .eq('status', 'published');
+
+    if (deityId) {
+      query = query.eq('deity_id', deityId);
+    }
+
+    const { data: mantras, error } = await query
       .order('difficulty_level', { ascending: true })
       .order('name', { ascending: true });
 
