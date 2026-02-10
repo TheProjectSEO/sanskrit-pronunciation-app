@@ -242,10 +242,10 @@ Stored in `.env.local` (gitignored):
 #### Feature 5: Word-Level Practice [P2]
 **Goal:** Click any word to hear it. Practice individual mispronounced words in a modal.
 
-- [ ] **5.1** Make mantra text words clickable (TTS on click)
-- [ ] **5.2** Word analysis API `app/api/analyze-word/route.ts`
-- [ ] **5.3** WordPracticeModal component
-- [ ] **5.4** "Practice this word" buttons in feedback errors
+- [x] **5.1** Make mantra text words clickable (TTS on click)
+- [x] **5.2** Word analysis API `app/api/analyze-word/route.ts`
+- [x] **5.3** WordPracticeModal component
+- [x] **5.4** "Practice this word" buttons in feedback errors
 
 **New files:** `app/api/analyze-word/route.ts`
 **Modify:** `app/practice/[id]/page.tsx`

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { playTTS } from '@/lib/audio/tts-player';
+import { playTTS, stopTTS } from '@/lib/audio/tts-player';
 import { FEEDBACK_LANGUAGES, type FeedbackLanguage } from '@/lib/constants/languages';
 
 interface Mantra {
@@ -73,6 +73,10 @@ export default function PracticePage() {
   const [isTTSLoading, setIsTTSLoading] = useState(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
 
+  // Word practice state
+  const [practiceWord, setPracticeWord] = useState<{ devanagari: string; roman: string } | null>(null);
+  const [clickedWord, setClickedWord] = useState<string | null>(null);
+
   // Language preference
   const [feedbackLanguage, setFeedbackLanguage] = useState<FeedbackLanguage>('hindi');
 
@@ -97,6 +101,28 @@ export default function PracticePage() {
         body: JSON.stringify({ feedback_language: lang }),
       }).catch(() => {});
     }
+  };
+
+  // Handle clicking a word in the mantra text
+  const handleWordClick = async (word: string) => {
+    setClickedWord(word);
+    try {
+      await playTTS(word);
+    } catch (err) {
+      console.error('TTS error for word:', word, err);
+    } finally {
+      setClickedWord(null);
+    }
+  };
+
+  // Open word practice modal
+  const openWordPractice = (roman: string) => {
+    // Find matching devanagari word by position
+    const romanWords = mantra?.reference_text_roman?.split(/\s+/) || [];
+    const devWords = mantra?.reference_text_devanagari?.split(/\s+/) || [];
+    const idx = romanWords.indexOf(roman);
+    const devanagari = idx >= 0 && idx < devWords.length ? devWords[idx] : '';
+    setPracticeWord({ devanagari, roman });
   };
 
   // Fetch mantra
@@ -439,17 +465,44 @@ export default function PracticePage() {
           <span>←</span> Back to Mantras
         </Link>
 
-        {/* Mantra Text */}
+        {/* Mantra Text - Clickable Words */}
         <div className="text-center space-y-2 py-4">
           <h1 className="text-sm font-medium text-gray-500 tracking-wider uppercase">
             {mantra.name}
           </h1>
           <p className="text-2xl text-orange-600 font-medium">
-            {mantra.reference_text_devanagari}
+            {mantra.reference_text_devanagari.split(/\s+/).map((word, i) => (
+              <span key={i}>
+                {i > 0 && ' '}
+                <span
+                  onClick={() => handleWordClick(word)}
+                  className={`cursor-pointer hover:bg-orange-100 rounded px-0.5 transition-colors ${
+                    clickedWord === word ? 'bg-orange-200 animate-pulse' : ''
+                  }`}
+                  title="Tap to hear"
+                >
+                  {word}
+                </span>
+              </span>
+            ))}
           </p>
           <p className="text-lg text-gray-600 italic">
-            {mantra.reference_text_roman}
+            {mantra.reference_text_roman.split(/\s+/).map((word, i) => (
+              <span key={i}>
+                {i > 0 && ' '}
+                <span
+                  onClick={() => handleWordClick(word)}
+                  className={`cursor-pointer hover:bg-gray-100 rounded px-0.5 transition-colors ${
+                    clickedWord === word ? 'bg-gray-200 animate-pulse' : ''
+                  }`}
+                  title="Tap to hear"
+                >
+                  {word}
+                </span>
+              </span>
+            ))}
           </p>
+          <p className="text-xs text-gray-400 mt-1">Tap any word to hear it</p>
         </div>
 
         {/* Audio Player */}
@@ -581,6 +634,7 @@ export default function PracticePage() {
               isTTSPlaying={isTTSPlaying}
               onRetry={() => setAnalysisResult(null)}
               onPlayFeedback={() => analysisResult.hindi_feedback && playHindiFeedback(analysisResult.hindi_feedback)}
+              onPracticeWord={openWordPractice}
             />
           ) : (
             <>
@@ -643,6 +697,15 @@ export default function PracticePage() {
           )}
         </div>
       </main>
+
+      {/* Word Practice Modal */}
+      {practiceWord && (
+        <WordPracticeModal
+          word={practiceWord}
+          feedbackLanguage={feedbackLanguage}
+          onClose={() => setPracticeWord(null)}
+        />
+      )}
     </div>
   );
 }
@@ -666,6 +729,7 @@ function AnalysisDisplay({
   isTTSPlaying,
   onRetry,
   onPlayFeedback,
+  onPracticeWord,
 }: {
   result: AnalysisResult;
   referenceRoman: string;
@@ -674,6 +738,7 @@ function AnalysisDisplay({
   isTTSPlaying: boolean;
   onRetry: () => void;
   onPlayFeedback: () => void;
+  onPracticeWord: (roman: string) => void;
 }) {
   const [wordTTSState, setWordTTSState] = useState<Record<string, 'loading' | 'playing'>>({});
 
@@ -821,6 +886,14 @@ function AnalysisDisplay({
                       <p className="text-gray-500 text-xs mt-1">
                         {error.explanation_english}
                       </p>
+                      {error.expected && (
+                        <button
+                          onClick={() => onPracticeWord(error.expected!)}
+                          className="mt-2 inline-flex items-center gap-1 px-3 py-1 text-xs font-medium bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
+                        >
+                          <span>🎯</span> Practice this word
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -866,6 +939,14 @@ function AnalysisDisplay({
                 </div>
                 {word.feedback && (
                   <p className="text-xs opacity-80 mt-1">{word.feedback}</p>
+                )}
+                {word.status !== 'correct' && (
+                  <button
+                    onClick={() => onPracticeWord(word.word)}
+                    className="text-xs underline opacity-70 hover:opacity-100 mt-1"
+                  >
+                    Practice
+                  </button>
                 )}
               </div>
             ))}
@@ -937,6 +1018,237 @@ function AnalysisDisplay({
         >
           फिर से कोशिश करें (Try Again)
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Word Practice Modal Component
+function WordPracticeModal({
+  word,
+  feedbackLanguage,
+  onClose,
+}: {
+  word: { devanagari: string; roman: string };
+  feedbackLanguage: FeedbackLanguage;
+  onClose: () => void;
+}) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [result, setResult] = useState<{ score: number; is_correct: boolean; feedback: string; tip: string; user_transcription: string } | null>(null);
+  const [attempts, setAttempts] = useState(0);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isPressing = useRef(false);
+
+  // Play word TTS on mount
+  useEffect(() => {
+    playTTS(word.roman).catch(() => {});
+    return () => { stopTTS(); };
+  }, [word.roman]);
+
+  // Global release handler
+  useEffect(() => {
+    const handleGlobalEnd = () => {
+      if (isPressing.current) {
+        handleRecordEnd();
+      }
+    };
+    document.addEventListener('mouseup', handleGlobalEnd);
+    document.addEventListener('touchend', handleGlobalEnd);
+    return () => {
+      document.removeEventListener('mouseup', handleGlobalEnd);
+      document.removeEventListener('touchend', handleGlobalEnd);
+    };
+  }, []);
+
+  const startRecording = async () => {
+    try {
+      stopTTS();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/mp4';
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      chunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: mimeType });
+        stream.getTracks().forEach((track) => track.stop());
+        if (blob.size > 500) {
+          analyzeWord(blob);
+        }
+      };
+
+      mediaRecorder.start(250);
+      setIsRecording(true);
+      setRecordingTime(0);
+      setResult(null);
+
+      recordingIntervalRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Mic access denied:', err);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingIntervalRef.current) {
+        clearInterval(recordingIntervalRef.current);
+      }
+    }
+  };
+
+  const handleRecordStart = useCallback(() => {
+    if (isPressing.current) return;
+    isPressing.current = true;
+    startRecording();
+  }, []);
+
+  const handleRecordEnd = useCallback(() => {
+    if (!isPressing.current) return;
+    isPressing.current = false;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      stopRecording();
+    }
+  }, [isRecording]);
+
+  const analyzeWord = async (blob: Blob) => {
+    setIsAnalyzing(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.webm');
+      formData.append('reference_word', word.roman);
+      formData.append('feedback_language', feedbackLanguage);
+
+      const response = await fetch('/api/analyze-word', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Analysis failed');
+      const data = await response.json();
+      setResult(data);
+      setAttempts((prev) => prev + 1);
+    } catch (err) {
+      console.error('Word analysis error:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-5 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">Word Practice</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Word Display */}
+        <div className="text-center space-y-1">
+          {word.devanagari && (
+            <p className="text-3xl text-orange-600 font-medium">{word.devanagari}</p>
+          )}
+          <p className="text-xl text-gray-600 italic">{word.roman}</p>
+          <button
+            onClick={() => playTTS(word.roman)}
+            className="mt-2 inline-flex items-center gap-1 px-4 py-1.5 text-sm bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200 transition-colors"
+          >
+            🔊 Listen
+          </button>
+        </div>
+
+        {/* Result */}
+        {result && (
+          <div className={`rounded-xl p-4 border ${
+            result.is_correct
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'
+          }`}>
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">{result.is_correct ? '🎉' : '🔄'}</span>
+              <div className="flex-1">
+                <p className={`font-bold text-lg ${result.is_correct ? 'text-green-700' : 'text-red-700'}`}>
+                  {result.score}%
+                </p>
+                <p className="text-sm text-gray-700">{result.feedback}</p>
+                {result.tip && (
+                  <p className="text-xs text-gray-500 mt-1">{result.tip}</p>
+                )}
+                {result.user_transcription && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    You said: "{result.user_transcription}"
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Record Button */}
+        {isAnalyzing ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600 mx-auto"></div>
+            <p className="text-sm text-gray-500 mt-2">Analyzing...</p>
+          </div>
+        ) : (
+          <div className="text-center">
+            <button
+              onMouseDown={(e) => { e.preventDefault(); handleRecordStart(); }}
+              onTouchStart={(e) => { e.preventDefault(); handleRecordStart(); }}
+              onContextMenu={(e) => e.preventDefault()}
+              className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-all select-none ${
+                isRecording
+                  ? 'bg-red-500 scale-110 animate-pulse'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              } shadow-lg cursor-pointer`}
+              style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
+            >
+              <span className="text-3xl text-white pointer-events-none">🎤</span>
+            </button>
+            <p className="text-sm text-gray-500 mt-2">
+              {isRecording ? `Recording... ${recordingTime}s` : 'Press & hold to record'}
+            </p>
+            {attempts > 0 && (
+              <p className="text-xs text-gray-400 mt-1">Attempt {attempts}</p>
+            )}
+          </div>
+        )}
+
+        {/* Done button */}
+        {result?.is_correct && (
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-green-600 text-white rounded-full font-medium hover:bg-green-700 transition-colors"
+          >
+            Done!
+          </button>
+        )}
       </div>
     </div>
   );
