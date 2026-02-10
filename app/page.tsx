@@ -19,6 +19,7 @@ interface Mantra {
   difficulty_level: number;
   category: string | null;
   deity_id: string | null;
+  verse_count: number;
 }
 
 export default function HomePage() {
@@ -193,6 +194,11 @@ export default function HomePage() {
                     <p className="text-gray-400 text-xs truncate">
                       {mantra.reference_text_roman}
                     </p>
+                    {mantra.verse_count > 0 && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-purple-50 text-purple-600 text-xs font-medium rounded-full">
+                        {mantra.verse_count} {mantra.verse_count === 1 ? 'verse' : 'verses'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-shrink-0 text-orange-500">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

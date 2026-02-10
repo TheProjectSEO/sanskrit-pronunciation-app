@@ -7,6 +7,16 @@ import Link from 'next/link';
 import { playTTS, stopTTS } from '@/lib/audio/tts-player';
 import { FEEDBACK_LANGUAGES, type FeedbackLanguage } from '@/lib/constants/languages';
 
+interface Verse {
+  id: string;
+  verse_number: number;
+  title: string | null;
+  text_devanagari: string;
+  text_roman: string;
+  audio_start_time: number | null;
+  audio_end_time: number | null;
+}
+
 interface Mantra {
   id: string;
   name: string;
@@ -77,6 +87,10 @@ export default function PracticePage() {
   const [practiceWord, setPracticeWord] = useState<{ devanagari: string; roman: string } | null>(null);
   const [clickedWord, setClickedWord] = useState<string | null>(null);
 
+  // Verse state
+  const [verses, setVerses] = useState<Verse[]>([]);
+  const [selectedVerse, setSelectedVerse] = useState<Verse | null>(null);
+
   // Language preference
   const [feedbackLanguage, setFeedbackLanguage] = useState<FeedbackLanguage>('hindi');
 
@@ -118,8 +132,8 @@ export default function PracticePage() {
   // Open word practice modal
   const openWordPractice = (roman: string) => {
     // Find matching devanagari word by position
-    const romanWords = mantra?.reference_text_roman?.split(/\s+/) || [];
-    const devWords = mantra?.reference_text_devanagari?.split(/\s+/) || [];
+    const romanWords = activeRoman.split(/\s+/) || [];
+    const devWords = activeDevanagari.split(/\s+/) || [];
     const idx = romanWords.indexOf(roman);
     const devanagari = idx >= 0 && idx < devWords.length ? devWords[idx] : '';
     setPracticeWord({ devanagari, roman });
@@ -129,6 +143,7 @@ export default function PracticePage() {
   useEffect(() => {
     if (mantraId) {
       fetchMantra();
+      fetchVerses();
     }
   }, [mantraId]);
 
@@ -145,6 +160,22 @@ export default function PracticePage() {
       setLoading(false);
     }
   };
+
+  const fetchVerses = async () => {
+    try {
+      const response = await fetch(`/api/mantras/${mantraId}/verses`);
+      if (response.ok) {
+        const data = await response.json();
+        setVerses(data.verses || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch verses:', err);
+    }
+  };
+
+  // Get the active text for practice (verse or full mantra)
+  const activeDevanagari = selectedVerse?.text_devanagari || mantra?.reference_text_devanagari || '';
+  const activeRoman = selectedVerse?.text_roman || mantra?.reference_text_roman || '';
 
   // Audio player controls
   const togglePlayPause = () => {
@@ -323,7 +354,7 @@ export default function PracticePage() {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('mantra_id', mantra.id);
-      formData.append('reference_text', mantra.reference_text_roman);
+      formData.append('reference_text', activeRoman);
       formData.append('feedback_language', feedbackLanguage);
 
       const response = await fetch('/api/analyze-pronunciation', {
@@ -469,9 +500,12 @@ export default function PracticePage() {
         <div className="text-center space-y-2 py-4">
           <h1 className="text-sm font-medium text-gray-500 tracking-wider uppercase">
             {mantra.name}
+            {selectedVerse && (
+              <span className="text-purple-500"> - Verse {selectedVerse.verse_number}{selectedVerse.title ? `: ${selectedVerse.title}` : ''}</span>
+            )}
           </h1>
           <p className="text-2xl text-orange-600 font-medium">
-            {mantra.reference_text_devanagari.split(/\s+/).map((word, i) => (
+            {activeDevanagari.split(/\s+/).map((word, i) => (
               <span key={i}>
                 {i > 0 && ' '}
                 <span
@@ -487,7 +521,7 @@ export default function PracticePage() {
             ))}
           </p>
           <p className="text-lg text-gray-600 italic">
-            {mantra.reference_text_roman.split(/\s+/).map((word, i) => (
+            {activeRoman.split(/\s+/).map((word, i) => (
               <span key={i}>
                 {i > 0 && ' '}
                 <span
@@ -504,6 +538,35 @@ export default function PracticePage() {
           </p>
           <p className="text-xs text-gray-400 mt-1">Tap any word to hear it</p>
         </div>
+
+        {/* Verse Selector */}
+        {verses.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            <button
+              onClick={() => { setSelectedVerse(null); setAnalysisResult(null); }}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedVerse === null
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
+              }`}
+            >
+              Full Mantra
+            </button>
+            {verses.map((verse) => (
+              <button
+                key={verse.id}
+                onClick={() => { setSelectedVerse(verse); setAnalysisResult(null); }}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedVerse?.id === verse.id
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                Verse {verse.verse_number}{verse.title ? `: ${verse.title}` : ''}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Audio Player */}
         <div className="bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl p-6">
@@ -628,8 +691,8 @@ export default function PracticePage() {
           ) : analysisResult ? (
             <AnalysisDisplay
               result={analysisResult}
-              referenceRoman={mantra.reference_text_roman}
-              referenceDevanagari={mantra.reference_text_devanagari}
+              referenceRoman={activeRoman}
+              referenceDevanagari={activeDevanagari}
               isTTSLoading={isTTSLoading}
               isTTSPlaying={isTTSPlaying}
               onRetry={() => setAnalysisResult(null)}

@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
         reference_audio_url,
         difficulty_level,
         category,
-        deity_id
+        deity_id,
+        mantra_verses(id)
       `)
       .eq('status', 'published');
 
@@ -35,7 +36,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch mantras' }, { status: 500 });
     }
 
-    return NextResponse.json({ mantras: mantras || [] });
+    // Add verse_count to each mantra
+    const mantrasWithCount = (mantras || []).map((m: Record<string, unknown>) => {
+      const verses = m.mantra_verses as unknown[] | null;
+      return {
+        ...m,
+        verse_count: verses?.length || 0,
+        mantra_verses: undefined,
+      };
+    });
+
+    return NextResponse.json({ mantras: mantrasWithCount });
   } catch (error) {
     console.error('Error in GET /api/mantras:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

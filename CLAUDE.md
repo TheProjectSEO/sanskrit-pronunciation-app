@@ -232,7 +232,7 @@ Stored in `.env.local` (gitignored):
 - [x] **4.4** Language constants `lib/constants/languages.ts`
 - [x] **4.5** Modify analysis API for multilingual prompts
 - [x] **4.6** Language selector on practice page
-- [ ] **4.7** Indic font support if needed
+- [x] **4.7** ~~Indic font support~~ N/A - default fonts render all scripts correctly
 
 **New files:** `supabase/migrations/005_user_preferences.sql`, `app/api/user/preferences/route.ts`, `lib/constants/languages.ts`
 **Modify:** `app/api/analyze-pronunciation/route.ts`, `app/practice/[id]/page.tsx`
@@ -252,20 +252,21 @@ Stored in `.env.local` (gitignored):
 
 ---
 
-#### Feature 6: Per-Verse Practice [P3 - Waiting for Arun's Designs]
+#### Feature 6: Per-Verse Practice [P3]
 **Goal:** Break long mantras into verses. Users pick any verse to practice separately.
 
 - [x] **6.1** Migration `006_mantra_verses.sql` - mantra_verses table
 - [x] **6.2** Run migration on Supabase (applied via MCP)
 - [x] **6.3** Verse management API `app/api/instructor/mantras/[id]/verses/route.ts` (GET/POST/PATCH/DELETE)
 - [x] **6.4** Public verse API `app/api/mantras/[id]/verses/route.ts`
-- [ ] **6.5** Verse management UI for instructors
-- [ ] **6.6** Verse selector on practice page
-- [ ] **6.7** Verse count badge on homepage cards
+- [x] **6.5** Verse management UI on instructor mantra detail page (add/edit/delete verses)
+- [x] **6.6** Verse selector tabs on practice page (Full Mantra + per-verse)
+- [x] **6.7** Verse count badge on homepage mantra cards
 
-**Status:** DB + API done. UI blocked - waiting for designs from Arun
+**Status:** COMPLETE
 
 **New files:** `supabase/migrations/006_mantra_verses.sql`, `app/api/instructor/mantras/[id]/verses/route.ts`, `app/api/mantras/[id]/verses/route.ts`
+**Modify:** `app/instructor/mantras/[id]/page.tsx`, `app/practice/[id]/page.tsx`, `app/api/mantras/route.ts`, `app/page.tsx`
 
 ---
 
