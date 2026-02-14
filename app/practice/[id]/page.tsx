@@ -82,6 +82,9 @@ export default function PracticePage() {
 
   // Word practice state
   const [practiceWord, setPracticeWord] = useState<{ devanagari: string; roman: string } | null>(null);
+
+  // Word audio cache
+  const [wordAudioMap, setWordAudioMap] = useState<Record<string, string>>({});
   const [clickedWord, setClickedWord] = useState<string | null>(null);
 
   // Verse state
@@ -118,9 +121,18 @@ export default function PracticePage() {
   const handleWordClick = async (word: string) => {
     setClickedWord(word);
     try {
-      await playTTS(word);
+      // Check if we have cached audio for this word
+      if (wordAudioMap[word]) {
+        console.log(`Playing cached audio for word: ${word}`);
+        const audio = new Audio(wordAudioMap[word]);
+        await audio.play();
+      } else {
+        // Fall back to live TTS generation
+        console.log(`No cached audio for "${word}", using live TTS`);
+        await playTTS(word);
+      }
     } catch (err) {
-      console.error('TTS error for word:', word, err);
+      console.error('Audio playback error for word:', word, err);
     } finally {
       setClickedWord(null);
     }
@@ -141,6 +153,7 @@ export default function PracticePage() {
     if (mantraId) {
       fetchMantra();
       fetchVerses();
+      fetchWordAudio();
     }
   }, [mantraId]);
 
@@ -167,6 +180,20 @@ export default function PracticePage() {
       }
     } catch (err) {
       console.error('Failed to fetch verses:', err);
+    }
+  };
+
+  const fetchWordAudio = async () => {
+    try {
+      const response = await fetch(`/api/mantras/${mantraId}/word-audio`);
+      if (response.ok) {
+        const data = await response.json();
+        setWordAudioMap(data.word_audio_map || {});
+        console.log(`Loaded ${data.total_words} cached word audio files`);
+      }
+    } catch (err) {
+      console.error('Failed to fetch word audio:', err);
+      // Non-critical - will fall back to live TTS
     }
   };
 
@@ -621,6 +648,7 @@ export default function PracticePage() {
               referenceDevanagari={activeDevanagari}
               isTTSLoading={isTTSLoading}
               isTTSPlaying={isTTSPlaying}
+              wordAudioMap={wordAudioMap}
               onRetry={() => setAnalysisResult(null)}
               onPlayFeedback={() => analysisResult.hindi_feedback && playHindiFeedback(analysisResult.hindi_feedback)}
               onPracticeWord={openWordPractice}
@@ -687,6 +715,7 @@ function AnalysisDisplay({
   referenceDevanagari,
   isTTSLoading,
   isTTSPlaying,
+  wordAudioMap,
   onRetry,
   onPlayFeedback,
   onPracticeWord,
@@ -696,6 +725,7 @@ function AnalysisDisplay({
   referenceDevanagari: string;
   isTTSLoading: boolean;
   isTTSPlaying: boolean;
+  wordAudioMap: Record<string, string>;
   onRetry: () => void;
   onPlayFeedback: () => void;
   onPracticeWord: (roman: string) => void;
@@ -707,9 +737,19 @@ function AnalysisDisplay({
     setWordTTSState((prev) => ({ ...prev, [key]: 'loading' }));
     try {
       setWordTTSState((prev) => ({ ...prev, [key]: 'playing' }));
-      await playTTS(word);
+
+      // Check if we have cached audio for this word
+      if (wordAudioMap[word]) {
+        console.log(`Playing cached audio for word: ${word}`);
+        const audio = new Audio(wordAudioMap[word]);
+        await audio.play();
+      } else {
+        // Fall back to live TTS generation
+        console.log(`No cached audio for "${word}", using live TTS`);
+        await playTTS(word);
+      }
     } catch (err) {
-      console.error('TTS error for word:', word, err);
+      console.error('Audio playback error for word:', word, err);
     } finally {
       setWordTTSState((prev) => {
         const next = { ...prev };

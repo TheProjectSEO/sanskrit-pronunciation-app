@@ -50,6 +50,8 @@ export default function MantraDetailPage() {
   const [publishing, setPublishing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [generatingAudio, setGeneratingAudio] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDevanagari, setEditDevanagari] = useState('');
   const [editRoman, setEditRoman] = useState('');
@@ -243,6 +245,38 @@ export default function MantraDetailPage() {
     }
   };
 
+  const handleGenerateWordAudio = async () => {
+    if (!mantra?.reference_text_roman) {
+      setError('Roman text is required to generate word audio');
+      return;
+    }
+
+    try {
+      setGeneratingAudio(true);
+      setError(null);
+      const response = await fetch(`/api/generate-word-audio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mantra_id: mantraId,
+          text_roman: mantra.reference_text_roman,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Word audio generation failed');
+      }
+
+      const data = await response.json();
+      alert(`Successfully generated audio for ${data.processed_words} out of ${data.total_words} words!`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Word audio generation failed');
+    } finally {
+      setGeneratingAudio(false);
+    }
+  };
+
   const startEditing = () => {
     if (!mantra) return;
     setEditName(mantra.name || '');
@@ -256,6 +290,35 @@ export default function MantraDetailPage() {
   const cancelEditing = () => {
     setEditing(false);
     setError(null);
+  };
+
+  const suggestDevanagari = async () => {
+    if (!editRoman.trim()) {
+      setError('Please enter Roman text first');
+      return;
+    }
+
+    setTranslating(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/translate-to-devanagari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roman_text: editRoman }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Translation failed');
+      }
+
+      const data = await response.json();
+      setEditDevanagari(data.devanagari_text);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Translation failed');
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -466,12 +529,33 @@ export default function MantraDetailPage() {
               Roman Script (IAST)
             </label>
             {editing ? (
-              <textarea
-                value={editRoman}
-                onChange={(e) => setEditRoman(e.target.value)}
-                rows={3}
-                className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
-              />
+              <>
+                <textarea
+                  value={editRoman}
+                  onChange={(e) => setEditRoman(e.target.value)}
+                  rows={3}
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+                />
+                <button
+                  onClick={suggestDevanagari}
+                  disabled={translating || !editRoman.trim()}
+                  className="mt-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm flex items-center gap-2"
+                >
+                  {translating ? (
+                    <>
+                      <span className="animate-spin">⚙️</span>
+                      Translating...
+                    </>
+                  ) : (
+                    <>
+                      ✨ Suggest Devanagari
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  AI will translate the Roman text to Devanagari. Review and edit as needed.
+                </p>
+              </>
             ) : (
               <div className="p-4 bg-gray-50 rounded-lg text-lg text-gray-900">
                 {mantra.reference_text_roman || mantra.text_latin || (
@@ -708,6 +792,25 @@ export default function MantraDetailPage() {
             </button>
           )}
 
+          {mantra.reference_text_roman && (
+            <button
+              onClick={handleGenerateWordAudio}
+              disabled={generatingAudio}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex items-center gap-2"
+            >
+              {generatingAudio ? (
+                <>
+                  <span className="animate-spin">⚙️</span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  🎵 Generate Word Audio
+                </>
+              )}
+            </button>
+          )}
+
           <Link
             href="/instructor/mantras"
             className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
@@ -715,6 +818,9 @@ export default function MantraDetailPage() {
             Back to List
           </Link>
         </div>
+        <p className="text-xs text-gray-500 mt-3">
+          💡 Tip: Generate word audio to enable consistent TTS pronunciation for students
+        </p>
       </div>
 
       {/* Metadata */}
