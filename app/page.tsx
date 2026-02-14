@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { MANTRA_CATEGORIES } from '@/lib/constants/categories';
 
 interface Deity {
   id: string;
@@ -27,6 +28,7 @@ export default function HomePage() {
   const [mantras, setMantras] = useState<Mantra[]>([]);
   const [deities, setDeities] = useState<Deity[]>([]);
   const [selectedDeity, setSelectedDeity] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,8 +36,8 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    fetchMantras(selectedDeity);
-  }, [selectedDeity]);
+    fetchMantras(selectedDeity, selectedCategory);
+  }, [selectedDeity, selectedCategory]);
 
   const fetchDeities = async () => {
     try {
@@ -49,10 +51,13 @@ export default function HomePage() {
     }
   };
 
-  const fetchMantras = async (deityId: string | null) => {
+  const fetchMantras = async (deityId: string | null, category: string | null) => {
     try {
       setLoading(true);
-      const url = deityId ? `/api/mantras?deity_id=${deityId}` : '/api/mantras';
+      const params = new URLSearchParams();
+      if (deityId) params.append('deity_id', deityId);
+      if (category) params.append('category', category);
+      const url = params.toString() ? `/api/mantras?${params.toString()}` : '/api/mantras';
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -134,32 +139,65 @@ export default function HomePage() {
 
         {/* Deity Filter Tabs */}
         {deities.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-4 -mx-1 px-1">
-            <button
-              onClick={() => setSelectedDeity(null)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedDeity === null
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
-              }`}
-            >
-              All
-            </button>
-            {deities.map((deity) => (
+          <div className="mb-3">
+            <p className="text-xs text-gray-500 mb-2 font-medium">Filter by Deity:</p>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
               <button
-                key={deity.id}
-                onClick={() => setSelectedDeity(deity.id)}
+                onClick={() => setSelectedDeity(null)}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedDeity === deity.id
+                  selectedDeity === null
                     ? 'bg-orange-500 text-white'
                     : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
                 }`}
               >
-                {deity.name_devanagari || deity.name}
+                All
+              </button>
+              {deities.map((deity) => (
+                <button
+                  key={deity.id}
+                  onClick={() => setSelectedDeity(deity.id)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedDeity === deity.id
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-orange-300'
+                  }`}
+                >
+                  {deity.name_devanagari || deity.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category Filter Tabs */}
+        <div className="mb-4">
+          <p className="text-xs text-gray-500 mb-2 font-medium">Filter by Category:</p>
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === null
+                  ? 'bg-purple-500 text-white'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
+              }`}
+            >
+              All
+            </button>
+            {MANTRA_CATEGORIES.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-purple-300'
+                }`}
+              >
+                {category}
               </button>
             ))}
           </div>
-        )}
+        </div>
 
         {/* Mantras List */}
         {loading ? (
@@ -185,7 +223,7 @@ export default function HomePage() {
                     <span className="text-2xl">🙏</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">
+                    <h3 className="font-bold text-gray-900 text-base leading-tight mb-1.5 line-clamp-2">
                       {mantra.name}
                     </h3>
                     <p className="text-orange-600 text-base mb-0.5 truncate">

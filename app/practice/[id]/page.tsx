@@ -73,13 +73,10 @@ export default function PracticePage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const recordButtonRef = useRef<HTMLButtonElement>(null);
-  const isPressing = useRef(false);
 
   // Analysis state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [playingSound, setPlayingSound] = useState<string | null>(null);
   const [isTTSLoading, setIsTTSLoading] = useState(false);
   const [isTTSPlaying, setIsTTSPlaying] = useState(false);
 
@@ -219,14 +216,10 @@ export default function PracticePage() {
     }
   };
 
-  const changeSpeed = () => {
-    const speeds = [0.5, 0.75, 1, 1.25, 1.5];
-    const currentIndex = speeds.indexOf(playbackRate);
-    const nextIndex = (currentIndex + 1) % speeds.length;
-    const newRate = speeds[nextIndex];
-    setPlaybackRate(newRate);
+  const setSpeed = (speed: number) => {
+    setPlaybackRate(speed);
     if (audioRef.current) {
-      audioRef.current.playbackRate = newRate;
+      audioRef.current.playbackRate = speed;
     }
   };
 
@@ -300,40 +293,14 @@ export default function PracticePage() {
     }
   };
 
-  // Handle press and hold - robust implementation
-  const handleRecordStart = useCallback(() => {
-    console.log('🎤 Record START - isPressing:', isPressing.current, 'isRecording:', isRecording);
-    if (isPressing.current) return; // Already pressing
-    isPressing.current = true;
-    startRecording();
-  }, [isRecording]);
-
-  const handleRecordEnd = useCallback(() => {
-    console.log('🛑 Record END - isPressing:', isPressing.current, 'isRecording:', isRecording);
-    if (!isPressing.current) return; // Not pressing
-    isPressing.current = false;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+  // Toggle recording on click
+  const toggleRecording = () => {
+    if (isRecording) {
       stopRecording();
+    } else {
+      startRecording();
     }
-  }, [isRecording]);
-
-  // Attach global mouseup/touchend to handle release outside button
-  useEffect(() => {
-    const handleGlobalEnd = () => {
-      if (isPressing.current) {
-        console.log('🌍 Global release detected');
-        handleRecordEnd();
-      }
-    };
-
-    document.addEventListener('mouseup', handleGlobalEnd);
-    document.addEventListener('touchend', handleGlobalEnd);
-
-    return () => {
-      document.removeEventListener('mouseup', handleGlobalEnd);
-      document.removeEventListener('touchend', handleGlobalEnd);
-    };
-  }, [handleRecordEnd]);
+  };
 
   // Analyze recording (only if blob has data)
   useEffect(() => {
@@ -414,31 +381,6 @@ export default function PracticePage() {
     }
   };
 
-  // Play key sound using ElevenLabs TTS
-  const playKeySound = async (sound: string) => {
-    setPlayingSound(sound);
-    try {
-      const response = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sound }),
-      });
-
-      if (!response.ok) throw new Error('TTS failed');
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      audio.onended = () => {
-        setPlayingSound(null);
-        URL.revokeObjectURL(audioUrl);
-      };
-      audio.play();
-    } catch (err) {
-      console.error('TTS error:', err);
-      setPlayingSound(null);
-    }
-  };
 
   if (loading) {
     return (
@@ -461,9 +403,6 @@ export default function PracticePage() {
     );
   }
 
-  const keySounds = mantra.critical_sounds?.length > 0
-    ? mantra.critical_sounds
-    : extractKeySounds(mantra.reference_text_roman);
 
   return (
     <div className="min-h-screen bg-orange-50">
@@ -498,10 +437,10 @@ export default function PracticePage() {
 
         {/* Mantra Text - Clickable Words */}
         <div className="text-center space-y-2 py-4">
-          <h1 className="text-sm font-medium text-gray-500 tracking-wider uppercase">
+          <h1 className="text-lg font-bold text-gray-900 mb-1">
             {mantra.name}
             {selectedVerse && (
-              <span className="text-purple-500"> - Verse {selectedVerse.verse_number}{selectedVerse.title ? `: ${selectedVerse.title}` : ''}</span>
+              <span className="text-purple-600 font-semibold"> • Verse {selectedVerse.verse_number}{selectedVerse.title ? `: ${selectedVerse.title}` : ''}</span>
             )}
           </h1>
           <p className="text-2xl text-orange-600 font-medium">
@@ -618,16 +557,25 @@ export default function PracticePage() {
             >
               ⏩
             </button>
-            <button
-              onClick={changeSpeed}
-              className="px-3 py-1 border border-purple-300 rounded-full text-sm text-purple-600 hover:bg-purple-100 transition-colors"
-            >
-              {playbackRate}x
-            </button>
+            <div className="flex items-center gap-1">
+              {[0.5, 0.75, 1, 1.25, 1.5].map((speed) => (
+                <button
+                  key={speed}
+                  onClick={() => setSpeed(speed)}
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-colors ${
+                    playbackRate === speed
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-purple-50 text-purple-600 border border-purple-200 hover:border-purple-400'
+                  }`}
+                >
+                  {speed}x
+                </button>
+              ))}
+            </div>
           </div>
 
-          <p className="text-center text-xs text-gray-500 mt-4">
-            💡 Tip: Use 0.5x speed to hear individual sounds clearly
+          <p className="text-center text-xs text-gray-500 mt-3">
+            💡 Tip: Click any speed above to adjust playback
           </p>
 
           <audio
@@ -639,28 +587,6 @@ export default function PracticePage() {
           />
         </div>
 
-        {/* Key Sounds */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <span>🔔</span> Key Sounds - Tap to hear
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {keySounds.map((sound, index) => (
-              <button
-                key={index}
-                onClick={() => playKeySound(sound)}
-                disabled={playingSound === sound}
-                className={`px-4 py-2 rounded-full border-2 text-sm font-medium transition-all ${
-                  playingSound === sound
-                    ? 'bg-orange-500 text-white border-orange-500'
-                    : 'bg-orange-50 text-orange-600 border-orange-200 hover:border-orange-400'
-                }`}
-              >
-                [{sound}]
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Language Selector */}
         <div className="flex items-center gap-2 justify-end">
@@ -702,46 +628,26 @@ export default function PracticePage() {
           ) : (
             <>
               <button
-                ref={recordButtonRef}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  console.log('👆 mousedown event');
-                  handleRecordStart();
-                }}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  console.log('👆 touchstart event');
-                  handleRecordStart();
-                }}
-                onContextMenu={(e) => e.preventDefault()}
-                className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center transition-all select-none ${
+                onClick={toggleRecording}
+                className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center transition-all ${
                   isRecording
                     ? 'bg-red-500 scale-110 animate-pulse'
                     : 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800'
                 } shadow-lg cursor-pointer`}
-                style={{
-                  WebkitTouchCallout: 'none',
-                  WebkitUserSelect: 'none',
-                  touchAction: 'none'
-                }}
               >
-                <span className="text-5xl text-white pointer-events-none select-none">🎤</span>
+                <span className="text-6xl text-white">🎤</span>
               </button>
 
               <div className="mt-6">
                 <p className="font-semibold text-gray-800 text-lg">
                   {isRecording
-                    ? recordingTime < 2
-                      ? `Keep holding... ${recordingTime}s`
-                      : `Recording... ${recordingTime}s`
-                    : 'Press & Hold to Record'}
+                    ? `Recording... ${recordingTime}s`
+                    : 'Click to Start Recording'}
                 </p>
                 <p className="text-gray-500">
                   {isRecording
-                    ? recordingTime < 2
-                      ? 'Hold for at least 2 seconds'
-                      : 'Release when done'
-                    : 'लंबा दबाएं और बोलें'}
+                    ? 'Click the button again to stop'
+                    : 'रिकॉर्ड करने के लिए क्लिक करें'}
                 </p>
               </div>
 
@@ -773,15 +679,6 @@ export default function PracticePage() {
   );
 }
 
-// Helper to extract key sounds from text
-function extractKeySounds(text: string): string[] {
-  const words = text.toLowerCase().split(/\s+/);
-  // Filter to meaningful Sanskrit words (more than 3 chars, not common words)
-  const filtered = words.filter(
-    (w) => w.length > 4 && !['namo', 'namah', 'shri'].includes(w)
-  );
-  return filtered.slice(0, 4);
-}
 
 // Analysis Result Display Component
 function AnalysisDisplay({
@@ -1105,7 +1002,6 @@ function WordPracticeModal({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const isPressing = useRef(false);
 
   // Play word TTS on mount
   useEffect(() => {
@@ -1113,20 +1009,6 @@ function WordPracticeModal({
     return () => { stopTTS(); };
   }, [word.roman]);
 
-  // Global release handler
-  useEffect(() => {
-    const handleGlobalEnd = () => {
-      if (isPressing.current) {
-        handleRecordEnd();
-      }
-    };
-    document.addEventListener('mouseup', handleGlobalEnd);
-    document.addEventListener('touchend', handleGlobalEnd);
-    return () => {
-      document.removeEventListener('mouseup', handleGlobalEnd);
-      document.removeEventListener('touchend', handleGlobalEnd);
-    };
-  }, []);
 
   const startRecording = async () => {
     try {
@@ -1177,19 +1059,13 @@ function WordPracticeModal({
     }
   };
 
-  const handleRecordStart = useCallback(() => {
-    if (isPressing.current) return;
-    isPressing.current = true;
-    startRecording();
-  }, []);
-
-  const handleRecordEnd = useCallback(() => {
-    if (!isPressing.current) return;
-    isPressing.current = false;
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+  const toggleRecording = () => {
+    if (isRecording) {
       stopRecording();
+    } else {
+      startRecording();
     }
-  }, [isRecording]);
+  };
 
   const analyzeWord = async (blob: Blob) => {
     setIsAnalyzing(true);
@@ -1282,20 +1158,17 @@ function WordPracticeModal({
         ) : (
           <div className="text-center">
             <button
-              onMouseDown={(e) => { e.preventDefault(); handleRecordStart(); }}
-              onTouchStart={(e) => { e.preventDefault(); handleRecordStart(); }}
-              onContextMenu={(e) => e.preventDefault()}
-              className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-all select-none ${
+              onClick={toggleRecording}
+              className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center transition-all ${
                 isRecording
                   ? 'bg-red-500 scale-110 animate-pulse'
                   : 'bg-purple-600 hover:bg-purple-700'
               } shadow-lg cursor-pointer`}
-              style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}
             >
-              <span className="text-3xl text-white pointer-events-none">🎤</span>
+              <span className="text-3xl text-white">🎤</span>
             </button>
             <p className="text-sm text-gray-500 mt-2">
-              {isRecording ? `Recording... ${recordingTime}s` : 'Press & hold to record'}
+              {isRecording ? `Recording... ${recordingTime}s - Click to stop` : 'Click to record'}
             </p>
             {attempts > 0 && (
               <p className="text-xs text-gray-400 mt-1">Attempt {attempts}</p>

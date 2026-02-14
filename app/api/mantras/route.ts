@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const supabase = getServiceSupabase();
     const { searchParams } = new URL(request.url);
     const deityId = searchParams.get('deity_id');
+    const category = searchParams.get('category');
 
     // Fetch published mantras for users
     let query = supabase
@@ -25,6 +26,10 @@ export async function GET(request: NextRequest) {
 
     if (deityId) {
       query = query.eq('deity_id', deityId);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
     }
 
     const { data: mantras, error } = await query
