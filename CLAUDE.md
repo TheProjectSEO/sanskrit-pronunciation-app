@@ -63,17 +63,26 @@ tapaswe-app/
 │       ├── auth/signup/route.ts          # Signup API
 │       ├── auth/forgot-password/route.ts # Forgot password API
 │       ├── auth/reset-password/route.ts  # Reset password API
-│       ├── mantras/route.ts              # Public: list published mantras
+│       ├── mantras/route.ts              # Public: list published mantras (with deity & category filters)
 │       ├── mantras/[id]/route.ts         # Public: single mantra detail
+│       ├── mantras/[id]/verses/route.ts  # Public: list verses for a mantra
+│       ├── mantras/[id]/word-audio/route.ts # Public: get cached word audio for a mantra
 │       ├── analyze-pronunciation/route.ts # GPT-4o pronunciation analysis
+│       ├── analyze-word/route.ts         # GPT-4o single word analysis
 │       ├── tts/route.ts                  # ElevenLabs TTS endpoint
+│       ├── translate-to-devanagari/route.ts # GPT-4o Roman → Devanagari translation
+│       ├── generate-word-audio/route.ts  # Pre-generate & cache TTS for all words in mantra
+│       ├── deities/route.ts              # Public: list all deities
+│       ├── user/preferences/route.ts     # User preferences (feedback language)
 │       └── instructor/
 │           ├── mantras/route.ts          # Instructor: list/create mantras
 │           ├── mantras/[id]/route.ts     # Instructor: GET + PATCH mantra
+│           ├── mantras/[id]/verses/route.ts # Instructor: verse CRUD
 │           ├── publish-mantra/route.ts   # Publish a mantra
 │           ├── delete-mantra/route.ts    # Delete a mantra
 │           ├── reprocess-mantra/route.ts # Reprocess transcription
-│           └── transcribe/route.ts       # Whisper transcription
+│           ├── transcribe/route.ts       # Whisper transcription
+│           └── deities/route.ts          # Instructor: deity CRUD
 ├── auth.ts                               # NextAuth config (trustHost: true, 24h sessions)
 ├── middleware.ts                          # Route protection (public/instructor routes)
 ├── lib/
@@ -87,7 +96,11 @@ tapaswe-app/
 ├── supabase/migrations/
 │   ├── 001_create_base_schema.sql        # users, mantras, reference_audio_clips, processing_jobs, pronunciation_logs, oauth_accounts, password_reset_tokens
 │   ├── 002_add_mantras_auth_columns.sql  # status, created_by, published_at on mantras
-│   └── 003_add_rls_policies.sql          # RLS on users, mantras, clips, jobs
+│   ├── 003_add_rls_policies.sql          # RLS on users, mantras, clips, jobs
+│   ├── 004_create_deities.sql            # deities table + deity_id on mantras
+│   ├── 005_user_preferences.sql          # user_preferences table (feedback_language)
+│   ├── 006_mantra_verses.sql             # mantra_verses table (per-verse practice)
+│   └── 007_word_audio_cache.sql          # word_audio_cache + mantra_word_audio (consistent TTS)
 ├── types/next-auth.d.ts                  # NextAuth type extensions (role on user/session)
 ├── scripts/                              # Utility scripts (fix ownership, reprocess, verify)
 ├── __tests__/middleware.test.ts           # Middleware tests
@@ -102,10 +115,15 @@ tapaswe-app/
 - **users** - id, email, name, password_hash, role (`student`|`instructor`|`admin`), first_name, last_name, is_active, created_at, updated_at
 - **oauth_accounts** - user_id FK, provider (`google`|`github`), provider_account_id, access_token, refresh_token, expires_at
 - **password_reset_tokens** - user_id FK, token, expires_at, used_at
-- **mantras** - id, title, status (`draft`|`published`), created_by FK, published_at, text_latin, text_devanagari, audio_url, difficulty_level, category (VARCHAR, unused), reference_text_devanagari, reference_text_roman, critical_sounds
+- **user_preferences** - user_id FK, feedback_language (`hindi`|`english`|`kannada`|`tamil`|`telugu`)
+- **deities** - id, name, name_devanagari, description, image_url
+- **mantras** - id, name, status (`draft`|`published`), created_by FK, published_at, reference_text_devanagari, reference_text_roman, reference_audio_url, difficulty_level, category (VARCHAR), deity_id FK, critical_sounds
+- **mantra_verses** - id, mantra_id FK, verse_number, title, text_devanagari, text_roman, audio_start_time, audio_end_time
 - **reference_audio_clips** - mantra_id FK, clip_type (`word`|`word_pair`|`full_mantra`), word_text, word_position, audio_url, start_time, end_time
 - **mantra_processing_jobs** - mantra_id FK, status (`pending`|`processing`|`completed`|`failed`), audio_path, created_by FK
 - **pronunciation_logs** - user_id FK, mantra_id FK, attempt_audio_url, feedback_score, feedback_text
+- **word_audio_cache** - id, word, audio_url, tts_provider, tts_model, language (UNIQUE on word+provider+model+language)
+- **mantra_word_audio** - id, mantra_id FK, word, word_audio_id FK, word_position (links mantras to cached word audio)
 
 ### RLS
 - RLS enabled on: users, mantras, reference_audio_clips, mantra_processing_jobs
@@ -117,6 +135,10 @@ tapaswe-app/
 - [x] 001 - Base schema
 - [x] 002 - Auth columns on mantras
 - [x] 003 - RLS policies
+- [x] 004 - Deities table + deity_id on mantras
+- [x] 005 - User preferences (feedback language)
+- [x] 006 - Mantra verses (per-verse practice)
+- [x] 007 - Word audio cache (consistent TTS pronunciation)
 
 ---
 
@@ -156,20 +178,31 @@ Stored in `.env.local` (gitignored):
 
 ## Status Board
 
-### Completed
+### Completed (Core Features)
 - [x] Core app working: auth, mantra upload, practice, AI analysis, TTS
 - [x] Instructor dashboard with mantra management
-- [x] Press-and-hold recording with MediaRecorder API
-- [x] GPT-4o pronunciation analysis with Hindi feedback
-- [x] ElevenLabs TTS for reference audio playback
+- [x] Click-to-record (replaced press-and-hold)
+- [x] GPT-4o pronunciation analysis with multilingual feedback (5 languages)
+- [x] Pre-generated word audio cache (100% consistent TTS)
 - [x] Password reset flow with email
 - [x] Route protection middleware
 - [x] RLS policies on all tables
 - [x] Deployment on Vercel
 - [x] Repo migrated from `Tapaswe-Sanskrit-App` to `sanskrit-pronunciation-app`
 
+### Completed (All 6 Features + Phase 1-3 Bugfixes)
+- [x] Feature 1: Transliteration editing (instructor can edit name, Devanagari, Roman)
+- [x] Feature 2: Sound icons on mispronounced words (TTS playback)
+- [x] Feature 3: Deity/category system (dual filtering on homepage)
+- [x] Feature 4: Multilingual feedback (Hindi, English, Kannada, Tamil, Telugu)
+- [x] Feature 5: Word-level practice (clickable words, practice modal)
+- [x] Feature 6: Per-verse practice (break mantras into verses)
+- [x] **Phase 1 Bugfixes:** Removed key sounds, fixed speed selector (5 direct buttons), improved title prominence
+- [x] **Phase 2 Bugfixes:** Fixed recording UX (click-to-start/stop), added category filter
+- [x] **Phase 3 Bugfixes:** AI-assisted Devanagari translation, TTS pronunciation fix (pre-generated cache)
+
 ### In Progress
-- (nothing currently in progress)
+- (nothing currently in progress - production ready!)
 
 ### Planned Features (Priority Order)
 
@@ -305,6 +338,9 @@ Phase 4 (Waiting for designs):
 | 2026-01-30 | ElevenLabs multilingual v2 | Best Sanskrit pronunciation quality |
 | 2026-02-07 | Migrated from `Tapaswe-Sanskrit-App` to `sanskrit-pronunciation-app` repo | Old repo had outdated code, other laptop had corrupted git |
 | 2026-02-07 | Feature priority: editing + sound icons first | Quick wins that unblock team testing |
+| 2026-02-15 | Pre-generated word audio cache (Option A) | Ensures 100% TTS consistency, shared cache across mantras, graceful fallback |
+| 2026-02-15 | Click-to-record instead of press-and-hold | Better UX, less confusing for users |
+| 2026-02-15 | GPT-4o for Roman→Devanagari translation | Makes instructor editing easier, IAST-aware |
 
 ---
 
@@ -316,6 +352,32 @@ Phase 4 (Waiting for designs):
 - Deleted old repo to prevent confusion
 - Analyzed team WhatsApp feedback and created 6-feature implementation plan
 - Created this CLAUDE.md as single source of truth
+
+### 2026-02-15 - Critical Bugfixes (Phase 1-3)
+**Phase 1 - Quick Wins (2-3 hours):**
+- Removed key sounds section (wrong logic for mantras)
+- Fixed speed selector with 5 direct buttons (0.5x-1.5x)
+- Verified deity filtering implementation
+- Improved mantra title prominence (larger, bolder)
+
+**Phase 2 - Medium Complexity (4-5 hours):**
+- Fixed recording mechanism: click-to-start/click-to-stop
+- Added category filter with 8 categories (Meditation, Prayer, Protection, Peace, Healing, Wisdom, Devotion, Prosperity)
+- Dual filtering: deity AND category simultaneously
+
+**Phase 3 - Complex/Critical (8 hours):**
+- Auto-translation: GPT-4o translates Roman → Devanagari
+- TTS pronunciation fix (CRITICAL BLOCKER): Pre-generated word audio cache system
+  - Created word_audio_cache + mantra_word_audio tables
+  - Generate TTS once per word, store in cache, reuse = 100% consistency
+  - Instructor "Generate Word Audio" button
+  - Practice page uses cached audio with graceful fallback
+
+**Commits:**
+- `ccddf31` - Phase 1+2 bugfixes (5 files, 445 insertions, 189 deletions)
+- `347cfc6` - Phase 3 (7 files, 492 insertions, 24 deletions)
+
+**Production Status:** All critical bugs fixed, ready for Chakshu demo
 
 ---
 

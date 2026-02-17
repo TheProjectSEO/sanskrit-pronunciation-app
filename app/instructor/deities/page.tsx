@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
@@ -27,6 +27,33 @@ export default function DeitiesPage() {
   const [formDevanagari, setFormDevanagari] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [transliterating, setTransliterating] = useState(false);
+  const transliterateTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-transliterate deity name to Devanagari
+  const autoTransliterate = useCallback(async (name: string) => {
+    if (!name.trim() || name.trim().length < 2) return;
+    setTransliterating(true);
+    try {
+      const res = await fetch('/api/translate-to-devanagari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roman_text: name.trim(), mode: 'deity' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.devanagari_text) setFormDevanagari(data.devanagari_text);
+      }
+    } catch {} finally {
+      setTransliterating(false);
+    }
+  }, []);
+
+  const handleNameChange = (value: string) => {
+    setFormName(value);
+    if (transliterateTimer.current) clearTimeout(transliterateTimer.current);
+    transliterateTimer.current = setTimeout(() => autoTransliterate(value), 600);
+  };
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -124,7 +151,7 @@ export default function DeitiesPage() {
             <input
               type="text"
               value={formName}
-              onChange={(e) => setFormName(e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g. Ganesh"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               required
@@ -132,15 +159,22 @@ export default function DeitiesPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name (Devanagari)
+              Name (Devanagari) {transliterating && <span className="text-orange-500 text-xs ml-1">generating...</span>}
             </label>
-            <input
-              type="text"
-              value={formDevanagari}
-              onChange={(e) => setFormDevanagari(e.target.value)}
-              placeholder="e.g. गणेश"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={formDevanagari}
+                onChange={(e) => setFormDevanagari(e.target.value)}
+                placeholder="Auto-generated from English name"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              {transliterating && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

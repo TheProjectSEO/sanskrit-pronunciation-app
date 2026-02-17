@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // ElevenLabs API configuration
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || process.env.ELEVEN_LABS_API_KEY;
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'; // Default Adam voice
 
 export async function POST(request: NextRequest) {

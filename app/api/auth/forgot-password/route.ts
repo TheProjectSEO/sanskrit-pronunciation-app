@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const { error: insertError } = await supabase
       .from('password_reset_tokens')
       .insert({
-        email: normalizedEmail,
+        user_id: user.id,
         token,
         expires_at: expiresAt.toISOString(),
       });

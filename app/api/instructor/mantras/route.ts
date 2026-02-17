@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { z } from 'zod';
 
 export async function GET() {
   try {
@@ -75,6 +76,71 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error in GET /api/instructor/mantras:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+const createMantraSchema = z.object({
+  name: z.string().min(1, 'Mantra name is required'),
+  reference_text_roman: z.string().min(1, 'Roman text is required'),
+  reference_text_devanagari: z.string().optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (session.user.role !== 'instructor') {
+      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const parsed = createMantraSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors[0]?.message || 'Invalid input' },
+        { status: 400 }
+      );
+    }
+
+    const { name: rawName, reference_text_roman, reference_text_devanagari } = parsed.data;
+    const supabase = getServiceSupabase();
+
+    // Handle duplicate name constraint
+    let name = rawName;
+    const { data: existing } = await supabase
+      .from('mantras')
+      .select('name')
+      .ilike('name', `${rawName}%`);
+
+    if (existing && existing.some(e => e.name === rawName)) {
+      name = `${rawName} (${existing.length + 1})`;
+    }
+
+    const { data: mantra, error: insertError } = await supabase
+      .from('mantras')
+      .insert({
+        name,
+        text_latin: reference_text_roman,
+        text_devanagari: reference_text_devanagari || null,
+        reference_text_roman,
+        reference_text_devanagari: reference_text_devanagari || null,
+        status: 'draft',
+        created_by: session.user.id,
+      })
+      .select('id, name, status')
+      .single();
+
+    if (insertError) {
+      console.error('Error creating mantra:', insertError);
+      return NextResponse.json({ error: 'Failed to create mantra' }, { status: 500 });
+    }
+
+    return NextResponse.json({ mantra }, { status: 201 });
+  } catch (error) {
+    console.error('Error in POST /api/instructor/mantras:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

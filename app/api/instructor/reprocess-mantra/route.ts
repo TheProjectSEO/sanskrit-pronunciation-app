@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
-import { transcribeAudio, convertToDevanagari, validateTranscription } from '@/lib/audio/whisper';
+import { transcribeAudio, identifyAndCorrectMantra } from '@/lib/audio/whisper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,22 +83,19 @@ export async function POST(request: NextRequest) {
       const transcription = await transcribeAudio(audioBuffer, filename);
       console.log('Reprocessing: Transcription complete:', transcription.text);
 
-      // Convert to Devanagari
-      console.log('Reprocessing: Converting to Devanagari...');
-      const devanagariText = await convertToDevanagari(transcription.text);
-      console.log('Reprocessing: Devanagari conversion complete:', devanagariText);
+      // Identify mantra and get correct text
+      console.log('Reprocessing: Identifying mantra with GPT-4o...');
+      const identified = await identifyAndCorrectMantra(transcription.text);
+      console.log(`Reprocessing: Identified as "${identified.mantra_name}"`);
 
-      // Validate transcription
-      await validateTranscription(transcription.text, devanagariText);
-
-      // Update mantra with new transcription
+      // Update mantra with corrected text
       const { error: updateError } = await supabase
         .from('mantras')
         .update({
-          reference_text_devanagari: devanagariText,
-          reference_text_roman: transcription.text,
-          text_latin: transcription.text,
-          text_devanagari: devanagariText,
+          reference_text_devanagari: identified.text_devanagari,
+          reference_text_roman: identified.text_roman,
+          text_latin: identified.text_roman,
+          text_devanagari: identified.text_devanagari,
           updated_at: new Date().toISOString(),
         })
         .eq('id', mantra.id);
@@ -119,8 +116,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        text_latin: transcription.text,
-        text_devanagari: devanagariText,
+        mantra_name: identified.mantra_name,
+        text_latin: identified.text_roman,
+        text_devanagari: identified.text_devanagari,
+        confidence: identified.confidence,
       });
     } catch (processingError) {
       console.error('Reprocessing error:', processingError);

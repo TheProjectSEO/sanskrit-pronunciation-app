@@ -7,6 +7,183 @@ import Link from 'next/link';
 import { playTTS, stopTTS } from '@/lib/audio/tts-player';
 import { FEEDBACK_LANGUAGES, type FeedbackLanguage } from '@/lib/constants/languages';
 
+/**
+ * Strip IAST diacritics and normalize for fuzzy word matching.
+ * IAST "dhīmahi" → "dhimahi", "naḥ" → "nah", "pracodayāt" → "pracodayat"
+ * Whisper "prachodayat" → "prachodayat", "naha" → "naha"
+ */
+function normalizeWord(word: string): string {
+  return word
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // strip combining diacritical marks (macrons, dots, etc)
+    .replace(/[^a-z]/g, '');         // remove non-alpha chars
+}
+
+/** Simple Levenshtein edit distance */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+/**
+ * Find the best matching instructor word audio for a given word.
+ * Tries: exact → lowercase → normalized exact → prefix/substring → best fuzzy.
+ */
+function matchWordAudio(word: string, audioMap: Record<string, string>): string | null {
+  if (!word || Object.keys(audioMap).length === 0) return null;
+
+  // 1. Exact match
+  if (audioMap[word]) return audioMap[word];
+
+  // 2. Case-insensitive
+  const lower = word.toLowerCase();
+  if (audioMap[lower]) return audioMap[lower];
+
+  // 3. Normalized exact match (strip IAST diacritics from both sides)
+  const norm = normalizeWord(word);
+  for (const [key, url] of Object.entries(audioMap)) {
+    if (normalizeWord(key) === norm) return url;
+  }
+
+  // 4. Prefix/substring match (handle "nah" vs "naha", etc.)
+  //    Accept if one starts with the other and length diff <= 2
+  for (const [key, url] of Object.entries(audioMap)) {
+    const normKey = normalizeWord(key);
+    if (
+      (normKey.startsWith(norm) || norm.startsWith(normKey)) &&
+      Math.abs(normKey.length - norm.length) <= 2
+    ) {
+      return url;
+    }
+  }
+
+  // 5. Best fuzzy match using edit distance
+  //    Accept if edit distance <= 30% of the longer word
+  let bestUrl: string | null = null;
+  let bestDist = Infinity;
+  for (const [key, url] of Object.entries(audioMap)) {
+    const normKey = normalizeWord(key);
+    const maxLen = Math.max(norm.length, normKey.length);
+    if (maxLen === 0) continue;
+
+    // Simple Levenshtein distance
+    const dist = levenshtein(norm, normKey);
+    const threshold = Math.ceil(maxLen * 0.35); // allow up to 35% edits
+    if (dist <= threshold && dist < bestDist) {
+      bestDist = dist;
+      bestUrl = url;
+    }
+  }
+
+  return bestUrl;
+}
+
+/**
+ * Convert IAST Roman text to Devanagari script (client-side, no API call).
+ * Handles standard Sanskrit consonants, vowels, anusvara, visarga.
+ */
+function iastToDevanagari(input: string): string {
+  const text = input.toLowerCase();
+
+  const consonants: [string, string][] = [
+    ['kh', 'ख'], ['gh', 'घ'], ['ch', 'छ'], ['jh', 'झ'],
+    ['ṭh', 'ठ'], ['ḍh', 'ढ'], ['th', 'थ'], ['dh', 'ध'],
+    ['ph', 'फ'], ['bh', 'भ'],
+    ['k', 'क'], ['g', 'ग'], ['ṅ', 'ङ'],
+    ['c', 'च'], ['j', 'ज'], ['ñ', 'ञ'],
+    ['ṭ', 'ट'], ['ḍ', 'ड'], ['ṇ', 'ण'],
+    ['t', 'त'], ['d', 'द'], ['n', 'न'],
+    ['p', 'प'], ['b', 'ब'], ['m', 'म'],
+    ['y', 'य'], ['r', 'र'], ['l', 'ल'], ['v', 'व'],
+    ['ś', 'श'], ['ṣ', 'ष'], ['s', 'स'], ['h', 'ह'],
+  ];
+
+  const indepVowels: [string, string][] = [
+    ['ai', 'ऐ'], ['au', 'औ'],
+    ['ā', 'आ'], ['ī', 'ई'], ['ū', 'ऊ'], ['ṛ', 'ऋ'],
+    ['e', 'ए'], ['o', 'ओ'],
+    ['a', 'अ'], ['i', 'इ'], ['u', 'उ'],
+  ];
+
+  const depVowels: [string, string][] = [
+    ['ai', 'ै'], ['au', 'ौ'],
+    ['ā', 'ा'], ['ī', 'ी'], ['ū', 'ू'], ['ṛ', 'ृ'],
+    ['e', 'े'], ['o', 'ो'],
+    ['a', ''], ['i', 'ि'], ['u', 'ु'],
+  ];
+
+  let result = '';
+  let i = 0;
+  let afterCons = false;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    // Spaces and punctuation — flush consonant state
+    if (ch === ' ' || ch === '.' || ch === ',' || ch === '|' || ch === '॥') {
+      afterCons = false;
+      result += ch;
+      i++;
+      continue;
+    }
+
+    // Anusvara / visarga
+    if (ch === 'ṃ') { result += 'ं'; afterCons = false; i++; continue; }
+    if (ch === 'ḥ') { result += 'ः'; afterCons = false; i++; continue; }
+
+    // Try consonants (longest first)
+    let found = false;
+    for (const [lat, dev] of consonants) {
+      if (text.substring(i, i + lat.length) === lat) {
+        if (afterCons) result += '्'; // halant before next consonant
+        result += dev;
+        afterCons = true;
+        i += lat.length;
+        found = true;
+        break;
+      }
+    }
+    if (found) continue;
+
+    // Try vowels
+    const vowelTable = afterCons ? depVowels : indepVowels;
+    for (const [lat, dev] of vowelTable) {
+      if (text.substring(i, i + lat.length) === lat) {
+        result += dev;
+        afterCons = false;
+        i += lat.length;
+        found = true;
+        break;
+      }
+    }
+    if (found) continue;
+
+    // Unknown char — pass through
+    afterCons = false;
+    result += ch;
+    i++;
+  }
+
+  // Final consonant gets halant (standard Sanskrit)
+  if (afterCons) result += '्';
+
+  // Replace ओं with ॐ
+  result = result.replace(/ओं/g, 'ॐ');
+
+  return result;
+}
+
 interface Verse {
   id: string;
   verse_number: number;
@@ -117,34 +294,35 @@ export default function PracticePage() {
     }
   };
 
+  // Play word using instructor audio first, TTS as fallback
+  const playWordAudio = useCallback(async (word: string) => {
+    const cachedUrl = matchWordAudio(word, wordAudioMap);
+    if (cachedUrl) {
+      console.log(`Playing instructor audio for: ${word}`);
+      const audio = new Audio(cachedUrl);
+      await audio.play();
+    } else {
+      console.log(`No instructor audio for "${word}", using TTS fallback`);
+      await playTTS(word);
+    }
+  }, [wordAudioMap]);
+
   // Handle clicking a word in the mantra text
-  const handleWordClick = async (word: string) => {
+  const handleWordClick = useCallback(async (word: string) => {
     setClickedWord(word);
     try {
-      // Check if we have cached audio for this word
-      if (wordAudioMap[word]) {
-        console.log(`Playing cached audio for word: ${word}`);
-        const audio = new Audio(wordAudioMap[word]);
-        await audio.play();
-      } else {
-        // Fall back to live TTS generation
-        console.log(`No cached audio for "${word}", using live TTS`);
-        await playTTS(word);
-      }
+      await playWordAudio(word);
     } catch (err) {
       console.error('Audio playback error for word:', word, err);
     } finally {
       setClickedWord(null);
     }
-  };
+  }, [playWordAudio]);
 
   // Open word practice modal
   const openWordPractice = (roman: string) => {
-    // Find matching devanagari word by position
-    const romanWords = activeRoman.split(/\s+/) || [];
-    const devWords = activeDevanagari.split(/\s+/) || [];
-    const idx = romanWords.indexOf(roman);
-    const devanagari = idx >= 0 && idx < devWords.length ? devWords[idx] : '';
+    // Convert IAST Roman to Devanagari directly (no position mapping)
+    const devanagari = iastToDevanagari(roman);
     setPracticeWord({ devanagari, roman });
   };
 
@@ -700,6 +878,7 @@ export default function PracticePage() {
         <WordPracticeModal
           word={practiceWord}
           feedbackLanguage={feedbackLanguage}
+          wordAudioMap={wordAudioMap}
           onClose={() => setPracticeWord(null)}
         />
       )}
@@ -738,14 +917,13 @@ function AnalysisDisplay({
     try {
       setWordTTSState((prev) => ({ ...prev, [key]: 'playing' }));
 
-      // Check if we have cached audio for this word
-      if (wordAudioMap[word]) {
-        console.log(`Playing cached audio for word: ${word}`);
-        const audio = new Audio(wordAudioMap[word]);
+      const cachedUrl = matchWordAudio(word, wordAudioMap);
+      if (cachedUrl) {
+        console.log(`Playing instructor audio for: ${word}`);
+        const audio = new Audio(cachedUrl);
         await audio.play();
       } else {
-        // Fall back to live TTS generation
-        console.log(`No cached audio for "${word}", using live TTS`);
+        console.log(`No instructor audio for "${word}", using TTS fallback`);
         await playTTS(word);
       }
     } catch (err) {
@@ -1027,10 +1205,12 @@ function AnalysisDisplay({
 function WordPracticeModal({
   word,
   feedbackLanguage,
+  wordAudioMap,
   onClose,
 }: {
   word: { devanagari: string; roman: string };
   feedbackLanguage: FeedbackLanguage;
+  wordAudioMap: Record<string, string>;
   onClose: () => void;
 }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -1038,15 +1218,42 @@ function WordPracticeModal({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ score: number; is_correct: boolean; feedback: string; tip: string; user_transcription: string } | null>(null);
   const [attempts, setAttempts] = useState(0);
+  const wordAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Play word TTS on mount
+  const playWord = async () => {
+    // Stop any currently playing audio
+    if (wordAudioRef.current) {
+      wordAudioRef.current.pause();
+      wordAudioRef.current = null;
+    }
+    stopTTS();
+
+    const cachedUrl = matchWordAudio(word.roman, wordAudioMap);
+    if (cachedUrl) {
+      console.log(`Modal: Playing instructor audio for: ${word.roman}`);
+      const audio = new Audio(cachedUrl);
+      wordAudioRef.current = audio;
+      await audio.play();
+    } else {
+      console.log(`Modal: No instructor audio for "${word.roman}", using TTS`);
+      await playTTS(word.roman);
+    }
+  };
+
+  // Play word on mount using instructor audio first
   useEffect(() => {
-    playTTS(word.roman).catch(() => {});
-    return () => { stopTTS(); };
+    playWord().catch(() => {});
+    return () => {
+      stopTTS();
+      if (wordAudioRef.current) {
+        wordAudioRef.current.pause();
+        wordAudioRef.current = null;
+      }
+    };
   }, [word.roman]);
 
 
@@ -1155,7 +1362,7 @@ function WordPracticeModal({
           )}
           <p className="text-xl text-gray-600 italic">{word.roman}</p>
           <button
-            onClick={() => playTTS(word.roman)}
+            onClick={() => playWord()}
             className="mt-2 inline-flex items-center gap-1 px-4 py-1.5 text-sm bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200 transition-colors"
           >
             🔊 Listen

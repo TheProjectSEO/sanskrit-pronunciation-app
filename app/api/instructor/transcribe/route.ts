@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
-import { transcribeAudio, convertToDevanagari, validateTranscription } from '@/lib/audio/whisper';
+import { transcribeAudio, identifyAndCorrectMantra } from '@/lib/audio/whisper';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,23 +30,22 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await audioFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Step 1: Transcribe with OpenAI Whisper FIRST (before creating mantra)
+    // Step 1: Transcribe with OpenAI Whisper
     console.log('Starting transcription...');
     const transcription = await transcribeAudio(buffer, audioFile.name || 'audio.webm');
-    console.log('Transcription complete:', transcription.text);
+    console.log('Whisper output:', transcription.text);
 
-    // Step 2: Convert to Devanagari
-    console.log('Converting to Devanagari...');
-    const devanagariText = await convertToDevanagari(transcription.text);
-    console.log('Devanagari conversion complete:', devanagariText);
+    // Step 2: Identify the mantra and get correct text using GPT-4o
+    console.log('Identifying mantra with GPT-4o...');
+    const identified = await identifyAndCorrectMantra(transcription.text);
+    console.log(`Identified: "${identified.mantra_name}" (confidence: ${identified.confidence})`);
+    console.log(`Roman: ${identified.text_roman}`);
+    console.log(`Devanagari: ${identified.text_devanagari}`);
 
-    // Step 3: Validate transcription with AI
-    const validation = await validateTranscription(transcription.text, devanagariText);
-
-    // Step 4: Generate a unique ID for audio storage
+    // Step 3: Generate a unique ID for audio storage
     const mantraId = crypto.randomUUID();
 
-    // Step 5: Upload audio to Supabase Storage
+    // Step 4: Upload audio to Supabase Storage
     const audioPath = `mantras/${mantraId}/audio.webm`;
     const { error: uploadError } = await supabase.storage
       .from('audio')
@@ -57,33 +56,35 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('Error uploading audio:', uploadError);
-      // Continue without audio URL - not critical
     }
 
     // Get public URL for audio
     const { data: urlData } = supabase.storage.from('audio').getPublicUrl(audioPath);
-
-    // Step 6: NOW create mantra record with ALL required data
-    const mantraName = transcription.text.substring(0, 100) || `Mantra ${new Date().toISOString()}`;
-
-    // Database schema requires these NOT NULL columns:
-    // - id (auto-generated)
-    // - name (required)
-    // - reference_text_devanagari (required)
-    // - reference_text_roman (required)
-    // - reference_audio_url (required)
     const audioUrl = urlData?.publicUrl || '';
+
+    // Step 5: Create mantra with correct identified text
+    let mantraName = identified.mantra_name || identified.text_roman.substring(0, 100);
+
+    // Handle duplicate name constraint
+    const { data: existing } = await supabase
+      .from('mantras')
+      .select('name')
+      .ilike('name', `${mantraName}%`);
+
+    if (existing && existing.some(e => e.name === mantraName)) {
+      mantraName = `${mantraName} (${existing.length + 1})`;
+    }
 
     const { data: mantra, error: mantraError } = await supabase
       .from('mantras')
       .insert({
         id: mantraId,
         name: mantraName,
-        reference_text_devanagari: devanagariText,
-        reference_text_roman: transcription.text,
+        reference_text_devanagari: identified.text_devanagari,
+        reference_text_roman: identified.text_roman,
         reference_audio_url: audioUrl,
-        text_latin: transcription.text,
-        text_devanagari: devanagariText,
+        text_latin: identified.text_roman,
+        text_devanagari: identified.text_devanagari,
         audio_url: audioUrl,
         created_by: userId,
         status: 'draft',
@@ -96,8 +97,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create mantra: ' + (mantraError?.message || 'Unknown error') }, { status: 500 });
     }
 
-    // Step 7: Create processing job as completed
-    const { error: jobError } = await supabase
+    // Step 6: Create processing job as completed
+    await supabase
       .from('mantra_processing_jobs')
       .insert({
         mantra_id: mantra.id,
@@ -107,16 +108,13 @@ export async function POST(request: NextRequest) {
         completed_at: new Date().toISOString(),
       });
 
-    if (jobError) {
-      console.error('Error creating processing job:', jobError);
-    }
-
     return NextResponse.json({
       mantra_id: mantra.id,
-      text_latin: transcription.text,
-      text_devanagari: devanagariText,
-      confidence: validation.confidence,
-      audio_url: urlData?.publicUrl || null,
+      mantra_name: identified.mantra_name,
+      text_latin: identified.text_roman,
+      text_devanagari: identified.text_devanagari,
+      confidence: identified.confidence,
+      audio_url: audioUrl,
     });
   } catch (error) {
     console.error('Error in POST /api/instructor/transcribe:', error);

@@ -3,10 +3,10 @@ import { getServiceSupabase } from '@/lib/supabase/service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const mantraId = params.id;
+    const { id: mantraId } = await params;
     const supabase = getServiceSupabase();
 
     // Fetch word audio mappings for this mantra

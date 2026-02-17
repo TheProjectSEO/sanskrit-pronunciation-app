@@ -21,6 +21,12 @@ interface Verse {
   audio_end_time: number | null;
 }
 
+interface WordAudio {
+  word: string;
+  position: number;
+  audio_url: string;
+}
+
 interface Mantra {
   id: string;
   name: string;
@@ -62,7 +68,38 @@ export default function MantraDetailPage() {
   const [editingVerse, setEditingVerse] = useState<Verse | null>(null);
   const [verseSaving, setVerseSaving] = useState(false);
   const [verseForm, setVerseForm] = useState({ verse_number: 1, title: '', text_devanagari: '', text_roman: '', audio_start_time: '', audio_end_time: '' });
+  const [verseTransliterating, setVerseTransliterating] = useState(false);
+  const [wordAudioList, setWordAudioList] = useState<WordAudio[]>([]);
+  const [playingWord, setPlayingWord] = useState<string | null>(null);
+  const verseTransliterateTimer = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const wordAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const autoTransliterateVerse = async (romanText: string) => {
+    if (!romanText.trim() || romanText.trim().length < 3) return;
+    setVerseTransliterating(true);
+    try {
+      const res = await fetch('/api/translate-to-devanagari', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roman_text: romanText.trim(), mode: 'mantra' }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.devanagari_text) {
+          setVerseForm(prev => ({ ...prev, text_devanagari: data.devanagari_text }));
+        }
+      }
+    } catch {} finally {
+      setVerseTransliterating(false);
+    }
+  };
+
+  const handleVerseRomanChange = (value: string) => {
+    setVerseForm(prev => ({ ...prev, text_roman: value }));
+    if (verseTransliterateTimer.current) clearTimeout(verseTransliterateTimer.current);
+    verseTransliterateTimer.current = setTimeout(() => autoTransliterateVerse(value), 800);
+  };
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -74,6 +111,7 @@ export default function MantraDetailPage() {
       fetchMantra();
       fetchDeities();
       fetchVerses();
+      fetchWordAudio();
     }
   }, [status, mantraId]);
 
@@ -115,6 +153,36 @@ export default function MantraDetailPage() {
     } catch (err) {
       console.error('Failed to fetch verses:', err);
     }
+  };
+
+  const fetchWordAudio = async () => {
+    try {
+      const response = await fetch(`/api/mantras/${mantraId}/word-audio`);
+      if (response.ok) {
+        const data = await response.json();
+        const map = data.word_audio_map || {};
+        const list: WordAudio[] = Object.entries(map).map(([word, url], i) => ({
+          word,
+          position: i,
+          audio_url: url as string,
+        }));
+        setWordAudioList(list);
+      }
+    } catch (err) {
+      console.error('Failed to fetch word audio:', err);
+    }
+  };
+
+  const playWordAudio = (word: string, audioUrl: string) => {
+    if (wordAudioRef.current) {
+      wordAudioRef.current.pause();
+    }
+    const audio = new Audio(audioUrl);
+    wordAudioRef.current = audio;
+    setPlayingWord(word);
+    audio.onended = () => setPlayingWord(null);
+    audio.onerror = () => setPlayingWord(null);
+    audio.play().catch(() => setPlayingWord(null));
   };
 
   const resetVerseForm = () => {
@@ -246,8 +314,8 @@ export default function MantraDetailPage() {
   };
 
   const handleGenerateWordAudio = async () => {
-    if (!mantra?.reference_text_roman) {
-      setError('Roman text is required to generate word audio');
+    if (!mantra?.reference_audio_url && !mantra?.audio_url) {
+      setError('Reference audio is required. Please upload audio for this mantra first.');
       return;
     }
 
@@ -257,19 +325,22 @@ export default function MantraDetailPage() {
       const response = await fetch(`/api/generate-word-audio`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mantra_id: mantraId,
-          text_roman: mantra.reference_text_roman,
-        }),
+        body: JSON.stringify({ mantra_id: mantraId }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Word audio generation failed');
       }
 
-      const data = await response.json();
-      alert(`Successfully generated audio for ${data.processed_words} out of ${data.total_words} words!`);
+      // Update word audio list with the results
+      const newWords: WordAudio[] = (data.words || []).map((w: { word: string; position: number; audio_url: string }) => ({
+        word: w.word,
+        position: w.position,
+        audio_url: w.audio_url,
+      }));
+      setWordAudioList(newWords);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Word audio generation failed');
     } finally {
@@ -305,7 +376,7 @@ export default function MantraDetailPage() {
       const response = await fetch('/api/translate-to-devanagari', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roman_text: editRoman }),
+        body: JSON.stringify({ roman_text: editRoman, mode: 'mantra' }),
       });
 
       if (!response.ok) {
@@ -314,6 +385,10 @@ export default function MantraDetailPage() {
 
       const data = await response.json();
       setEditDevanagari(data.devanagari_text);
+      // If AI corrected the Roman text, update it too
+      if (data.roman_text && data.roman_text !== editRoman) {
+        setEditRoman(data.roman_text);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Translation failed');
     } finally {
@@ -661,19 +736,20 @@ export default function MantraDetailPage() {
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Devanagari Text</label>
+              <label className="block text-xs text-gray-500 mb-1">Roman Text (IAST) — type here, Devanagari auto-generates</label>
               <textarea
-                value={verseForm.text_devanagari}
-                onChange={(e) => setVerseForm({ ...verseForm, text_devanagari: e.target.value })}
+                value={verseForm.text_roman}
+                onChange={(e) => handleVerseRomanChange(e.target.value)}
                 rows={2}
+                placeholder="Type in English/Roman script..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-vertical"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Roman Text (IAST)</label>
+              <label className="block text-xs text-gray-500 mb-1">Devanagari Text {verseTransliterating && <span className="text-purple-500 text-xs ml-1">generating...</span>}</label>
               <textarea
-                value={verseForm.text_roman}
-                onChange={(e) => setVerseForm({ ...verseForm, text_roman: e.target.value })}
+                value={verseForm.text_devanagari}
+                onChange={(e) => setVerseForm({ ...verseForm, text_devanagari: e.target.value })}
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 resize-vertical"
               />
@@ -768,6 +844,78 @@ export default function MantraDetailPage() {
         )}
       </div>
 
+      {/* Word Audio */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Word Audio {wordAudioList.length > 0 && <span className="text-sm font-normal text-gray-500">({wordAudioList.length} words)</span>}
+          </h2>
+          {(mantra.reference_audio_url || mantra.audio_url) && (
+            <button
+              onClick={handleGenerateWordAudio}
+              disabled={generatingAudio}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium text-sm flex items-center gap-2"
+            >
+              {generatingAudio ? (
+                <>
+                  <span className="animate-spin inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                  Splitting...
+                </>
+              ) : wordAudioList.length > 0 ? (
+                'Re-split Audio'
+              ) : (
+                'Split Audio into Words'
+              )}
+            </button>
+          )}
+        </div>
+
+        {generatingAudio && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+              <div>
+                <p className="text-blue-800 font-medium text-sm">Splitting your audio into words...</p>
+                <p className="text-blue-600 text-xs">Whisper is detecting word boundaries, then extracting each word clip</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {wordAudioList.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {wordAudioList.map((wa) => (
+              <button
+                key={`${wa.position}-${wa.word}`}
+                onClick={() => playWordAudio(wa.word, wa.audio_url)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
+                  playingWord === wa.word
+                    ? 'bg-blue-100 border-blue-400 text-blue-800 ring-2 ring-blue-300'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-blue-50 hover:border-blue-300'
+                }`}
+              >
+                {playingWord === wa.word ? (
+                  <span className="inline-block w-4 h-4">
+                    <span className="flex items-end gap-0.5 h-full">
+                      <span className="w-1 bg-blue-500 animate-pulse" style={{height: '60%'}}></span>
+                      <span className="w-1 bg-blue-500 animate-pulse" style={{height: '100%', animationDelay: '0.15s'}}></span>
+                      <span className="w-1 bg-blue-500 animate-pulse" style={{height: '40%', animationDelay: '0.3s'}}></span>
+                    </span>
+                  </span>
+                ) : (
+                  <span className="text-blue-500">&#9654;</span>
+                )}
+                {wa.word}
+              </button>
+            ))}
+          </div>
+        ) : !generatingAudio ? (
+          <p className="text-gray-400 text-sm italic">
+            No word audio yet. Click &quot;Split Audio into Words&quot; to break your reference audio into individual word clips using your own voice.
+          </p>
+        ) : null}
+      </div>
+
       {/* Actions */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
@@ -792,25 +940,6 @@ export default function MantraDetailPage() {
             </button>
           )}
 
-          {mantra.reference_text_roman && (
-            <button
-              onClick={handleGenerateWordAudio}
-              disabled={generatingAudio}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium flex items-center gap-2"
-            >
-              {generatingAudio ? (
-                <>
-                  <span className="animate-spin">⚙️</span>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  🎵 Generate Word Audio
-                </>
-              )}
-            </button>
-          )}
-
           <Link
             href="/instructor/mantras"
             className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
@@ -818,9 +947,6 @@ export default function MantraDetailPage() {
             Back to List
           </Link>
         </div>
-        <p className="text-xs text-gray-500 mt-3">
-          💡 Tip: Generate word audio to enable consistent TTS pronunciation for students
-        </p>
       </div>
 
       {/* Metadata */}

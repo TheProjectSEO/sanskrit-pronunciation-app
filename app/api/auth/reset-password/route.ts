@@ -80,12 +80,26 @@ export async function POST(request: NextRequest) {
     // Get service Supabase client
     const supabase = getServiceSupabase();
 
+    // Look up user first to get user_id for token verification
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: 'Invalid reset token' },
+        { status: 400 }
+      );
+    }
+
     // Check if token exists in database and hasn't been used
     const { data: tokenRecord, error: tokenError } = await supabase
       .from('password_reset_tokens')
       .select('id, expires_at, used_at')
       .eq('token', token)
-      .eq('email', email)
+      .eq('user_id', user.id)
       .single();
 
     if (tokenError || !tokenRecord) {
@@ -109,20 +123,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Reset link has expired. Please request a new one.' },
         { status: 400 }
-      );
-    }
-
-    // Get user
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email')
-      .eq('email', email)
-      .single();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
       );
     }
 
