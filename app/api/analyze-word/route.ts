@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { toFile } from 'openai';
 import { getLanguagePromptInstruction } from '@/lib/constants/languages';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Transcribe user's recording
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAI().audio.transcriptions.create({
       file: file,
       model: 'whisper-1',
       prompt: `Sanskrit word: ${referenceWord}`,
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Analyze with GPT-4o
     const languageInstruction = getLanguagePromptInstruction(feedbackLanguage);
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {

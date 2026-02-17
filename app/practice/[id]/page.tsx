@@ -262,6 +262,8 @@ export default function PracticePage() {
 
   // Word audio cache
   const [wordAudioMap, setWordAudioMap] = useState<Record<string, string>>({});
+  const [wordTimestamps, setWordTimestamps] = useState<Record<string, { start: number; end: number }>>({});
+  const [wordRefAudioUrl, setWordRefAudioUrl] = useState<string>('');
   const [clickedWord, setClickedWord] = useState<string | null>(null);
 
   // Verse state
@@ -294,18 +296,74 @@ export default function PracticePage() {
     }
   };
 
+  // Find word timestamp using fuzzy matching (same normalization as matchWordAudio)
+  const findWordTimestamp = useCallback((word: string): { start: number; end: number } | null => {
+    if (!word || Object.keys(wordTimestamps).length === 0) return null;
+    // Exact / lowercase
+    if (wordTimestamps[word]) return wordTimestamps[word];
+    if (wordTimestamps[word.toLowerCase()]) return wordTimestamps[word.toLowerCase()];
+    // Normalized
+    const norm = normalizeWord(word);
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      if (normalizeWord(key) === norm) return ts;
+    }
+    // Prefix
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      if ((normKey.startsWith(norm) || norm.startsWith(normKey)) && Math.abs(normKey.length - norm.length) <= 2) return ts;
+    }
+    // Levenshtein
+    let best: { start: number; end: number } | null = null;
+    let bestDist = Infinity;
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      const dist = levenshtein(norm, normKey);
+      const threshold = Math.ceil(Math.max(norm.length, normKey.length) * 0.35);
+      if (dist <= threshold && dist < bestDist) { bestDist = dist; best = ts; }
+    }
+    return best;
+  }, [wordTimestamps]);
+
+  // Play a time-range of the reference audio
+  const playTimeRange = useCallback((audioUrl: string, start: number, end: number): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const audio = new Audio(audioUrl);
+      audio.currentTime = start;
+      const onTimeUpdate = () => {
+        if (audio.currentTime >= end) {
+          audio.pause();
+          audio.removeEventListener('timeupdate', onTimeUpdate);
+          resolve();
+        }
+      };
+      audio.addEventListener('timeupdate', onTimeUpdate);
+      audio.addEventListener('ended', () => resolve(), { once: true });
+      audio.addEventListener('error', () => reject(new Error('Audio playback failed')), { once: true });
+      audio.play().catch(reject);
+    });
+  }, []);
+
   // Play word using instructor audio first, TTS as fallback
   const playWordAudio = useCallback(async (word: string) => {
+    // Priority 1: Time-range playback from reference audio (new approach)
+    const ts = findWordTimestamp(word);
+    if (ts && wordRefAudioUrl) {
+      console.log(`Playing instructor voice for: ${word} (${ts.start}s-${ts.end}s)`);
+      await playTimeRange(wordRefAudioUrl, ts.start, ts.end);
+      return;
+    }
+    // Priority 2: Separate audio file (legacy)
     const cachedUrl = matchWordAudio(word, wordAudioMap);
     if (cachedUrl) {
-      console.log(`Playing instructor audio for: ${word}`);
+      console.log(`Playing cached audio file for: ${word}`);
       const audio = new Audio(cachedUrl);
       await audio.play();
-    } else {
-      console.log(`No instructor audio for "${word}", using TTS fallback`);
-      await playTTS(word);
+      return;
     }
-  }, [wordAudioMap]);
+    // Priority 3: ElevenLabs TTS fallback
+    console.log(`No instructor audio for "${word}", using TTS fallback`);
+    await playTTS(word);
+  }, [findWordTimestamp, wordRefAudioUrl, playTimeRange, wordAudioMap]);
 
   // Handle clicking a word in the mantra text
   const handleWordClick = useCallback(async (word: string) => {
@@ -367,11 +425,12 @@ export default function PracticePage() {
       if (response.ok) {
         const data = await response.json();
         setWordAudioMap(data.word_audio_map || {});
-        console.log(`Loaded ${data.total_words} cached word audio files`);
+        setWordTimestamps(data.word_timestamps || {});
+        setWordRefAudioUrl(data.reference_audio_url || '');
+        console.log(`Loaded ${data.total_words} word timestamps`);
       }
     } catch (err) {
       console.error('Failed to fetch word audio:', err);
-      // Non-critical - will fall back to live TTS
     }
   };
 
@@ -827,6 +886,8 @@ export default function PracticePage() {
               isTTSLoading={isTTSLoading}
               isTTSPlaying={isTTSPlaying}
               wordAudioMap={wordAudioMap}
+              wordTimestamps={wordTimestamps}
+              wordRefAudioUrl={wordRefAudioUrl}
               onRetry={() => setAnalysisResult(null)}
               onPlayFeedback={() => analysisResult.hindi_feedback && playHindiFeedback(analysisResult.hindi_feedback)}
               onPracticeWord={openWordPractice}
@@ -879,6 +940,8 @@ export default function PracticePage() {
           word={practiceWord}
           feedbackLanguage={feedbackLanguage}
           wordAudioMap={wordAudioMap}
+          wordTimestamps={wordTimestamps}
+          wordRefAudioUrl={wordRefAudioUrl}
           onClose={() => setPracticeWord(null)}
         />
       )}
@@ -895,6 +958,8 @@ function AnalysisDisplay({
   isTTSLoading,
   isTTSPlaying,
   wordAudioMap,
+  wordTimestamps,
+  wordRefAudioUrl,
   onRetry,
   onPlayFeedback,
   onPracticeWord,
@@ -905,11 +970,36 @@ function AnalysisDisplay({
   isTTSLoading: boolean;
   isTTSPlaying: boolean;
   wordAudioMap: Record<string, string>;
+  wordTimestamps: Record<string, { start: number; end: number }>;
+  wordRefAudioUrl: string;
   onRetry: () => void;
   onPlayFeedback: () => void;
   onPracticeWord: (roman: string) => void;
 }) {
   const [wordTTSState, setWordTTSState] = useState<Record<string, 'loading' | 'playing'>>({});
+
+  const findTimestamp = (word: string): { start: number; end: number } | null => {
+    if (!word || Object.keys(wordTimestamps).length === 0) return null;
+    if (wordTimestamps[word]) return wordTimestamps[word];
+    if (wordTimestamps[word.toLowerCase()]) return wordTimestamps[word.toLowerCase()];
+    const norm = normalizeWord(word);
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      if (normalizeWord(key) === norm) return ts;
+    }
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      if ((normKey.startsWith(norm) || norm.startsWith(normKey)) && Math.abs(normKey.length - norm.length) <= 2) return ts;
+    }
+    let best: { start: number; end: number } | null = null;
+    let bestDist = Infinity;
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      const dist = levenshtein(norm, normKey);
+      const threshold = Math.ceil(Math.max(norm.length, normKey.length) * 0.35);
+      if (dist <= threshold && dist < bestDist) { bestDist = dist; best = ts; }
+    }
+    return best;
+  };
 
   const handlePlayWord = async (word: string) => {
     const key = word;
@@ -917,15 +1007,26 @@ function AnalysisDisplay({
     try {
       setWordTTSState((prev) => ({ ...prev, [key]: 'playing' }));
 
+      // Priority 1: Time-range from reference audio
+      const ts = findTimestamp(word);
+      if (ts && wordRefAudioUrl) {
+        const audio = new Audio(wordRefAudioUrl);
+        audio.currentTime = ts.start;
+        const onTime = () => { if (audio.currentTime >= ts.end) { audio.pause(); audio.removeEventListener('timeupdate', onTime); } };
+        audio.addEventListener('timeupdate', onTime);
+        await audio.play();
+        await new Promise<void>(r => { audio.addEventListener('pause', () => r(), { once: true }); audio.addEventListener('ended', () => r(), { once: true }); });
+        return;
+      }
+      // Priority 2: Separate audio file
       const cachedUrl = matchWordAudio(word, wordAudioMap);
       if (cachedUrl) {
-        console.log(`Playing instructor audio for: ${word}`);
         const audio = new Audio(cachedUrl);
         await audio.play();
-      } else {
-        console.log(`No instructor audio for "${word}", using TTS fallback`);
-        await playTTS(word);
+        return;
       }
+      // Priority 3: TTS fallback
+      await playTTS(word);
     } catch (err) {
       console.error('Audio playback error for word:', word, err);
     } finally {
@@ -1206,11 +1307,15 @@ function WordPracticeModal({
   word,
   feedbackLanguage,
   wordAudioMap,
+  wordTimestamps,
+  wordRefAudioUrl,
   onClose,
 }: {
   word: { devanagari: string; roman: string };
   feedbackLanguage: FeedbackLanguage;
   wordAudioMap: Record<string, string>;
+  wordTimestamps: Record<string, { start: number; end: number }>;
+  wordRefAudioUrl: string;
   onClose: () => void;
 }) {
   const [isRecording, setIsRecording] = useState(false);
@@ -1224,6 +1329,30 @@ function WordPracticeModal({
   const chunksRef = useRef<Blob[]>([]);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Find timestamp using fuzzy matching (same as parent)
+  const findTimestamp = (w: string): { start: number; end: number } | null => {
+    if (!w || Object.keys(wordTimestamps).length === 0) return null;
+    if (wordTimestamps[w]) return wordTimestamps[w];
+    if (wordTimestamps[w.toLowerCase()]) return wordTimestamps[w.toLowerCase()];
+    const norm = normalizeWord(w);
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      if (normalizeWord(key) === norm) return ts;
+    }
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      if ((normKey.startsWith(norm) || norm.startsWith(normKey)) && Math.abs(normKey.length - norm.length) <= 2) return ts;
+    }
+    let best: { start: number; end: number } | null = null;
+    let bestDist = Infinity;
+    for (const [key, ts] of Object.entries(wordTimestamps)) {
+      const normKey = normalizeWord(key);
+      const dist = levenshtein(norm, normKey);
+      const threshold = Math.ceil(Math.max(norm.length, normKey.length) * 0.35);
+      if (dist <= threshold && dist < bestDist) { bestDist = dist; best = ts; }
+    }
+    return best;
+  };
+
   const playWord = async () => {
     // Stop any currently playing audio
     if (wordAudioRef.current) {
@@ -1232,16 +1361,32 @@ function WordPracticeModal({
     }
     stopTTS();
 
+    // Priority 1: Time-range from reference audio
+    const ts = findTimestamp(word.roman);
+    if (ts && wordRefAudioUrl) {
+      console.log(`Modal: Playing instructor voice for: ${word.roman} (${ts.start}s-${ts.end}s)`);
+      const audio = new Audio(wordRefAudioUrl);
+      wordAudioRef.current = audio;
+      audio.currentTime = ts.start;
+      const onTime = () => { if (audio.currentTime >= ts.end) { audio.pause(); audio.removeEventListener('timeupdate', onTime); } };
+      audio.addEventListener('timeupdate', onTime);
+      await audio.play();
+      return;
+    }
+
+    // Priority 2: Separate audio file (legacy)
     const cachedUrl = matchWordAudio(word.roman, wordAudioMap);
     if (cachedUrl) {
-      console.log(`Modal: Playing instructor audio for: ${word.roman}`);
+      console.log(`Modal: Playing cached audio for: ${word.roman}`);
       const audio = new Audio(cachedUrl);
       wordAudioRef.current = audio;
       await audio.play();
-    } else {
-      console.log(`Modal: No instructor audio for "${word.roman}", using TTS`);
-      await playTTS(word.roman);
+      return;
     }
+
+    // Priority 3: TTS fallback
+    console.log(`Modal: No instructor audio for "${word.roman}", using TTS`);
+    await playTTS(word.roman);
   };
 
   // Play word on mount using instructor audio first

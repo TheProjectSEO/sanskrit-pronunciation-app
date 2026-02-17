@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { toFile } from 'openai';
 import { getLanguagePromptInstruction } from '@/lib/constants/languages';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 /**
  * Intelligent Sanskrit Pronunciation Analysis System
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Transcribe user's recording
     // Use generic Sanskrit context to avoid Whisper hallucinating the reference text
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAI().audio.transcriptions.create({
       file: file,
       model: 'whisper-1',
       prompt: 'Sanskrit mantra pronunciation. Om. Namah. Shivaya. Hare Krishna. Hare Rama. Vasudeva. Bhagavate.',
@@ -247,7 +249,7 @@ The hindi_feedback field must be:
 Now analyze the student's recitation:`;
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o', // Use GPT-4o for better Hindi generation and analysis
       messages: [
         { role: 'system', content: systemPrompt },

@@ -1,9 +1,10 @@
 import OpenAI from 'openai';
 
-// Initialize OpenAI client with API key from environment
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI;
+function getOpenAI() {
+  if (!_openai) _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return _openai;
+}
 
 export interface TranscriptionResult {
   text: string;
@@ -35,7 +36,7 @@ export async function transcribeAudio(
     // Note: Whisper doesn't support Sanskrit ('sa') directly.
     // We omit the language parameter to let Whisper auto-detect,
     // and use a detailed prompt to guide accurate transcription.
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getOpenAI().audio.transcriptions.create({
       file: file,
       model: 'whisper-1',
       response_format: 'verbose_json',
@@ -76,7 +77,7 @@ export async function identifyAndCorrectMantra(
   }
 
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o',
       messages: [
         {

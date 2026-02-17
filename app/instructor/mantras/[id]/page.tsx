@@ -24,7 +24,9 @@ interface Verse {
 interface WordAudio {
   word: string;
   position: number;
-  audio_url: string;
+  audio_url?: string;
+  start_time?: number;
+  end_time?: number;
 }
 
 interface Mantra {
@@ -70,6 +72,7 @@ export default function MantraDetailPage() {
   const [verseForm, setVerseForm] = useState({ verse_number: 1, title: '', text_devanagari: '', text_roman: '', audio_start_time: '', audio_end_time: '' });
   const [verseTransliterating, setVerseTransliterating] = useState(false);
   const [wordAudioList, setWordAudioList] = useState<WordAudio[]>([]);
+  const [wordRefAudioUrl, setWordRefAudioUrl] = useState<string>('');
   const [playingWord, setPlayingWord] = useState<string | null>(null);
   const verseTransliterateTimer = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -160,11 +163,19 @@ export default function MantraDetailPage() {
       const response = await fetch(`/api/mantras/${mantraId}/word-audio`);
       if (response.ok) {
         const data = await response.json();
-        const map = data.word_audio_map || {};
-        const list: WordAudio[] = Object.entries(map).map(([word, url], i) => ({
+        setWordRefAudioUrl(data.reference_audio_url || '');
+
+        // Build word list from timestamps (new) or audio_map (legacy)
+        const timestamps = data.word_timestamps || {};
+        const audioMap = data.word_audio_map || {};
+        const allWords = new Set([...Object.keys(timestamps), ...Object.keys(audioMap)]);
+
+        const list: WordAudio[] = Array.from(allWords).map((word, i) => ({
           word,
           position: i,
-          audio_url: url as string,
+          audio_url: audioMap[word],
+          start_time: timestamps[word]?.start,
+          end_time: timestamps[word]?.end,
         }));
         setWordAudioList(list);
       }
@@ -173,16 +184,42 @@ export default function MantraDetailPage() {
     }
   };
 
-  const playWordAudio = (word: string, audioUrl: string) => {
+  const playWordAudio = (wa: WordAudio) => {
     if (wordAudioRef.current) {
       wordAudioRef.current.pause();
     }
-    const audio = new Audio(audioUrl);
-    wordAudioRef.current = audio;
-    setPlayingWord(word);
-    audio.onended = () => setPlayingWord(null);
-    audio.onerror = () => setPlayingWord(null);
-    audio.play().catch(() => setPlayingWord(null));
+    setPlayingWord(wa.word);
+
+    // Priority 1: Time-range playback from reference audio
+    if (wa.start_time != null && wa.end_time != null && wordRefAudioUrl) {
+      const audio = new Audio(wordRefAudioUrl);
+      wordAudioRef.current = audio;
+      audio.currentTime = wa.start_time;
+      const endTime = wa.end_time;
+      const onTime = () => {
+        if (audio.currentTime >= endTime) {
+          audio.pause();
+          audio.removeEventListener('timeupdate', onTime);
+          setPlayingWord(null);
+        }
+      };
+      audio.addEventListener('timeupdate', onTime);
+      audio.onended = () => setPlayingWord(null);
+      audio.onerror = () => setPlayingWord(null);
+      audio.play().catch(() => setPlayingWord(null));
+      return;
+    }
+
+    // Priority 2: Separate audio file (legacy)
+    if (wa.audio_url) {
+      const audio = new Audio(wa.audio_url);
+      wordAudioRef.current = audio;
+      audio.onended = () => setPlayingWord(null);
+      audio.onerror = () => setPlayingWord(null);
+      audio.play().catch(() => setPlayingWord(null));
+    } else {
+      setPlayingWord(null);
+    }
   };
 
   const resetVerseForm = () => {
@@ -334,13 +371,16 @@ export default function MantraDetailPage() {
         throw new Error(data.error || 'Word audio generation failed');
       }
 
-      // Update word audio list with the results
-      const newWords: WordAudio[] = (data.words || []).map((w: { word: string; position: number; audio_url: string }) => ({
+      // Update word audio list with timestamps from the results
+      const newWords: WordAudio[] = (data.words || []).map((w: { word: string; position: number; start: number; end: number }) => ({
         word: w.word,
         position: w.position,
-        audio_url: w.audio_url,
+        start_time: w.start,
+        end_time: w.end,
       }));
       setWordAudioList(newWords);
+      // Update reference audio URL
+      if (data.audio_url) setWordRefAudioUrl(data.audio_url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Word audio generation failed');
     } finally {
@@ -887,7 +927,7 @@ export default function MantraDetailPage() {
             {wordAudioList.map((wa) => (
               <button
                 key={`${wa.position}-${wa.word}`}
-                onClick={() => playWordAudio(wa.word, wa.audio_url)}
+                onClick={() => playWordAudio(wa)}
                 className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
                   playingWord === wa.word
                     ? 'bg-blue-100 border-blue-400 text-blue-800 ring-2 ring-blue-300'

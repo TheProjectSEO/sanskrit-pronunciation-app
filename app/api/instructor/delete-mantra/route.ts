@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getServiceSupabase } from '@/lib/supabase/service';
 
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = getServiceSupabase();
     // Check authentication
     const session = await auth();
     if (!session?.user) {
