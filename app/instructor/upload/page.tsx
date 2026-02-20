@@ -73,6 +73,29 @@ export default function UploadPage() {
     }
   }, [mode]);
 
+  // Auto-split audio into words when mantra is created with audio
+  useEffect(() => {
+    if (mode === 'success' && result?.mantra_id && result?.audio_url) {
+      setSplittingWords(true);
+      setSaveMessage('Auto-splitting audio into words...');
+      fetch('/api/generate-word-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mantra_id: result.mantra_id }),
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.words) {
+            setSaveMessage(`Split into ${data.words.length} words using your voice.`);
+          }
+        })
+        .catch(() => {
+          setSaveMessage('Word splitting will be retried when you save.');
+        })
+        .finally(() => setSplittingWords(false));
+    }
+  }, [mode, result?.mantra_id, result?.audio_url]);
+
   // Initialize edit fields when result arrives
   useEffect(() => {
     if (result) {
