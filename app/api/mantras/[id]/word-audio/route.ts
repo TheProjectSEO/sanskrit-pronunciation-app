@@ -21,46 +21,57 @@ export async function GET(
     // Fetch word timestamps for this mantra
     const { data: wordAudio, error } = await supabase
       .from('mantra_word_audio')
-      .select('word, word_position, start_time, end_time, word_audio_cache(audio_url)')
+      .select('word, word_position, start_time, end_time, verified')
       .eq('mantra_id', mantraId)
       .order('word_position', { ascending: true });
 
     if (error) {
-      console.error('Error fetching word audio:', error);
+      console.error('[word-audio] Query error:', error);
       return NextResponse.json(
         { error: 'Failed to fetch word audio' },
         { status: 500 }
       );
     }
 
-    // Build word data: timestamps for time-range playback, or legacy audio_url
+    // Build legacy word_timestamps dict (kept for backward compat)
     const wordTimestamps: Record<string, { start: number; end: number }> = {};
-    const wordAudioMap: Record<string, string> = {};
+    // Build position-indexed array (handles duplicate words correctly)
+    const wordBoundaries: Array<{
+      word: string;
+      position: number;
+      start: number;
+      end: number;
+      verified: boolean;
+    }> = [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (wordAudio || []).forEach((item: any) => {
-      // New approach: timestamps for time-range playback
+    (wordAudio || []).forEach((item) => {
       if (item.start_time != null && item.end_time != null) {
         wordTimestamps[item.word] = {
           start: item.start_time,
           end: item.end_time,
         };
-      }
-      // Legacy approach: separate audio file URLs
-      if (item.word_audio_cache?.audio_url) {
-        wordAudioMap[item.word] = item.word_audio_cache.audio_url;
+        wordBoundaries.push({
+          word: item.word,
+          position: item.word_position,
+          start: item.start_time,
+          end: item.end_time,
+          verified: item.verified ?? false,
+        });
       }
     });
+
+    console.log(`[word-audio] mantra=${mantraId} words=${wordBoundaries.length} refUrl=${referenceAudioUrl ? 'YES' : 'NONE'}`);
 
     return NextResponse.json({
       mantra_id: mantraId,
       reference_audio_url: referenceAudioUrl,
       word_timestamps: wordTimestamps,
-      word_audio_map: wordAudioMap, // backward compat
-      total_words: Object.keys(wordTimestamps).length || Object.keys(wordAudioMap).length,
+      word_boundaries: wordBoundaries,
+      word_audio_map: {},
+      total_words: wordBoundaries.length,
     });
   } catch (error) {
-    console.error('Error in GET /api/mantras/[id]/word-audio:', error);
+    console.error('[word-audio] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

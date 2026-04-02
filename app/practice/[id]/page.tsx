@@ -90,6 +90,62 @@ function matchWordAudio(word: string, audioMap: Record<string, string>): string 
 }
 
 /**
+ * Cache decoded AudioBuffers by URL so we only download & decode once.
+ * Web Audio API gives sample-exact playback — no seeking or polling needed.
+ */
+const audioBufferCache: Record<string, AudioBuffer> = {};
+let sharedAudioContext: AudioContext | null = null;
+let activeSource: AudioBufferSourceNode | null = null;
+
+function getAudioContext(): AudioContext {
+  if (!sharedAudioContext || sharedAudioContext.state === 'closed') {
+    sharedAudioContext = new AudioContext();
+  }
+  return sharedAudioContext;
+}
+
+async function getAudioBuffer(url: string): Promise<AudioBuffer> {
+  if (audioBufferCache[url]) return audioBufferCache[url];
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const ctx = getAudioContext();
+  const buffer = await ctx.decodeAudioData(arrayBuffer);
+  audioBufferCache[url] = buffer;
+  return buffer;
+}
+
+/**
+ * Play a time-range of an audio file with sample-exact precision.
+ * Uses Web Audio API's AudioBufferSourceNode.start(when, offset, duration)
+ * which plays exactly the specified samples — no overshoot possible.
+ */
+async function playTimeRange(audioUrl: string, start: number, end: number): Promise<void> {
+  // Stop any currently playing word
+  if (activeSource) {
+    try { activeSource.stop(); } catch { /* already stopped */ }
+    activeSource = null;
+  }
+
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') await ctx.resume();
+
+  const buffer = await getAudioBuffer(audioUrl);
+  const duration = end - start;
+
+  return new Promise((resolve) => {
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.onended = () => {
+      activeSource = null;
+      resolve();
+    };
+    activeSource = source;
+    source.start(0, start, duration); // sample-exact: plays only [start, start+duration]
+  });
+}
+
+/**
  * Convert IAST Roman text to Devanagari script (client-side, no API call).
  * Handles standard Sanskrit consonants, vowels, anusvara, visarga.
  */
@@ -263,6 +319,7 @@ export default function PracticePage() {
   // Word audio cache
   const [wordAudioMap, setWordAudioMap] = useState<Record<string, string>>({});
   const [wordTimestamps, setWordTimestamps] = useState<Record<string, { start: number; end: number }>>({});
+  const [wordBoundaries, setWordBoundaries] = useState<Array<{ word: string; position: number; start: number; end: number }>>([]);
   const [wordRefAudioUrl, setWordRefAudioUrl] = useState<string>('');
   const [clickedWord, setClickedWord] = useState<string | null>(null);
 
@@ -296,23 +353,26 @@ export default function PracticePage() {
     }
   };
 
-  // Find word timestamp using fuzzy matching (same normalization as matchWordAudio)
-  const findWordTimestamp = useCallback((word: string): { start: number; end: number } | null => {
+  // Find word timestamp — prefers position-indexed lookup (handles duplicates),
+  // falls back to fuzzy word-text matching for backward compat
+  const findWordTimestamp = useCallback((word: string, wordIndex?: number): { start: number; end: number } | null => {
+    // Priority 1: Position-indexed lookup (handles duplicate words correctly)
+    if (wordIndex != null && wordBoundaries.length > 0 && wordIndex < wordBoundaries.length) {
+      const b = wordBoundaries[wordIndex];
+      return { start: b.start, end: b.end };
+    }
+    // Priority 2: Fuzzy matching against legacy word_timestamps dict
     if (!word || Object.keys(wordTimestamps).length === 0) return null;
-    // Exact / lowercase
     if (wordTimestamps[word]) return wordTimestamps[word];
     if (wordTimestamps[word.toLowerCase()]) return wordTimestamps[word.toLowerCase()];
-    // Normalized
     const norm = normalizeWord(word);
     for (const [key, ts] of Object.entries(wordTimestamps)) {
       if (normalizeWord(key) === norm) return ts;
     }
-    // Prefix
     for (const [key, ts] of Object.entries(wordTimestamps)) {
       const normKey = normalizeWord(key);
       if ((normKey.startsWith(norm) || norm.startsWith(normKey)) && Math.abs(normKey.length - norm.length) <= 2) return ts;
     }
-    // Levenshtein
     let best: { start: number; end: number } | null = null;
     let bestDist = Infinity;
     for (const [key, ts] of Object.entries(wordTimestamps)) {
@@ -322,33 +382,16 @@ export default function PracticePage() {
       if (dist <= threshold && dist < bestDist) { bestDist = dist; best = ts; }
     }
     return best;
-  }, [wordTimestamps]);
+  }, [wordTimestamps, wordBoundaries]);
 
-  // Play a time-range of the reference audio
-  const playTimeRange = useCallback((audioUrl: string, start: number, end: number): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const audio = new Audio(audioUrl);
-      audio.currentTime = start;
-      const onTimeUpdate = () => {
-        if (audio.currentTime >= end) {
-          audio.pause();
-          audio.removeEventListener('timeupdate', onTimeUpdate);
-          resolve();
-        }
-      };
-      audio.addEventListener('timeupdate', onTimeUpdate);
-      audio.addEventListener('ended', () => resolve(), { once: true });
-      audio.addEventListener('error', () => reject(new Error('Audio playback failed')), { once: true });
-      audio.play().catch(reject);
-    });
-  }, []);
+  // playTimeRange is defined at module level (shared with AnalysisDisplay and WordPracticeModal)
 
   // Play word using instructor audio first, TTS as fallback
-  const playWordAudio = useCallback(async (word: string) => {
-    // Priority 1: Time-range playback from reference audio (new approach)
-    const ts = findWordTimestamp(word);
+  const playWordAudio = useCallback(async (word: string, wordIndex?: number) => {
+    // Priority 1: Time-range playback from reference audio
+    const ts = findWordTimestamp(word, wordIndex);
     if (ts && wordRefAudioUrl) {
-      console.log(`Playing instructor voice for: ${word} (${ts.start}s-${ts.end}s)`);
+      console.log(`Playing instructor voice for: ${word}[${wordIndex}] (${ts.start}s-${ts.end}s)`);
       await playTimeRange(wordRefAudioUrl, ts.start, ts.end);
       return;
     }
@@ -363,13 +406,13 @@ export default function PracticePage() {
     // Priority 3: ElevenLabs TTS fallback
     console.log(`No instructor audio for "${word}", using TTS fallback`);
     await playTTS(word);
-  }, [findWordTimestamp, wordRefAudioUrl, playTimeRange, wordAudioMap]);
+  }, [findWordTimestamp, wordRefAudioUrl, wordAudioMap]);
 
   // Handle clicking a word in the mantra text
-  const handleWordClick = useCallback(async (word: string) => {
+  const handleWordClick = useCallback(async (word: string, wordIndex?: number) => {
     setClickedWord(word);
     try {
-      await playWordAudio(word);
+      await playWordAudio(word, wordIndex);
     } catch (err) {
       console.error('Audio playback error for word:', word, err);
     } finally {
@@ -426,11 +469,18 @@ export default function PracticePage() {
         const data = await response.json();
         setWordAudioMap(data.word_audio_map || {});
         setWordTimestamps(data.word_timestamps || {});
+        setWordBoundaries(data.word_boundaries || []);
         setWordRefAudioUrl(data.reference_audio_url || '');
-        console.log(`Loaded ${data.total_words} word timestamps`);
+        console.log('[WordAudio] Loaded:', {
+          boundaries: (data.word_boundaries || []).length,
+          timestamps: Object.keys(data.word_timestamps || {}).length,
+          refUrl: data.reference_audio_url ? 'YES' : 'NONE',
+        });
+      } else {
+        console.error('[WordAudio] API returned', response.status);
       }
     } catch (err) {
-      console.error('Failed to fetch word audio:', err);
+      console.error('[WordAudio] Failed to fetch:', err);
     }
   };
 
@@ -712,7 +762,7 @@ export default function PracticePage() {
               <span key={i}>
                 {i > 0 && ' '}
                 <span
-                  onClick={() => handleWordClick(word)}
+                  onClick={() => handleWordClick(word, i)}
                   className={`cursor-pointer hover:bg-orange-100 rounded px-0.5 transition-colors ${
                     clickedWord === word ? 'bg-orange-200 animate-pulse' : ''
                   }`}
@@ -728,7 +778,7 @@ export default function PracticePage() {
               <span key={i}>
                 {i > 0 && ' '}
                 <span
-                  onClick={() => handleWordClick(word)}
+                  onClick={() => handleWordClick(word, i)}
                   className={`cursor-pointer hover:bg-gray-100 rounded px-0.5 transition-colors ${
                     clickedWord === word ? 'bg-gray-200 animate-pulse' : ''
                   }`}
@@ -1007,25 +1057,29 @@ function AnalysisDisplay({
     try {
       setWordTTSState((prev) => ({ ...prev, [key]: 'playing' }));
 
+      console.log('[AnalysisPlay]', word, {
+        timestampKeys: Object.keys(wordTimestamps).length,
+        refUrl: wordRefAudioUrl ? 'YES' : 'NONE',
+      });
+
       // Priority 1: Time-range from reference audio
       const ts = findTimestamp(word);
+      console.log('[AnalysisPlay] findTimestamp result:', ts ? `${ts.start}-${ts.end}` : 'NULL');
       if (ts && wordRefAudioUrl) {
-        const audio = new Audio(wordRefAudioUrl);
-        audio.currentTime = ts.start;
-        const onTime = () => { if (audio.currentTime >= ts.end) { audio.pause(); audio.removeEventListener('timeupdate', onTime); } };
-        audio.addEventListener('timeupdate', onTime);
-        await audio.play();
-        await new Promise<void>(r => { audio.addEventListener('pause', () => r(), { once: true }); audio.addEventListener('ended', () => r(), { once: true }); });
+        console.log('[AnalysisPlay] Using instructor voice time-range');
+        await playTimeRange(wordRefAudioUrl, ts.start, ts.end);
         return;
       }
       // Priority 2: Separate audio file
       const cachedUrl = matchWordAudio(word, wordAudioMap);
       if (cachedUrl) {
+        console.log('[AnalysisPlay] Using cached audio file');
         const audio = new Audio(cachedUrl);
         await audio.play();
         return;
       }
       // Priority 3: TTS fallback
+      console.log('[AnalysisPlay] FALLBACK to ElevenLabs TTS for:', word);
       await playTTS(word);
     } catch (err) {
       console.error('Audio playback error for word:', word, err);
@@ -1365,12 +1419,7 @@ function WordPracticeModal({
     const ts = findTimestamp(word.roman);
     if (ts && wordRefAudioUrl) {
       console.log(`Modal: Playing instructor voice for: ${word.roman} (${ts.start}s-${ts.end}s)`);
-      const audio = new Audio(wordRefAudioUrl);
-      wordAudioRef.current = audio;
-      audio.currentTime = ts.start;
-      const onTime = () => { if (audio.currentTime >= ts.end) { audio.pause(); audio.removeEventListener('timeupdate', onTime); } };
-      audio.addEventListener('timeupdate', onTime);
-      await audio.play();
+      await playTimeRange(wordRefAudioUrl, ts.start, ts.end);
       return;
     }
 

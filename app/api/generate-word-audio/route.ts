@@ -82,17 +82,47 @@ export async function POST(request: NextRequest) {
       .eq('mantra_id', mantra_id);
 
     // Step 4: Store timestamps in DB (no FFmpeg, no file splitting needed)
+    // Use midpoint clamping: each word's boundaries are clamped to the
+    // midpoint of the gap between adjacent words. This prevents any overlap
+    // that causes audio bleed (hearing "Om n..." instead of just "Om").
     const processedWords: Array<{ word: string; position: number; start: number; end: number }> = [];
 
-    for (let i = 0; i < words.length; i++) {
-      const wordInfo = words[i];
-      const word = wordInfo.word.trim();
-      if (!word) continue;
+    // Filter out empty words first so indexing is correct
+    const validWords = words.filter(w => w.word.trim());
 
-      // Add small padding around word boundaries for natural sound
-      const padding = 0.05; // 50ms
-      const start = Math.max(0, wordInfo.start - padding);
-      const end = wordInfo.end + padding;
+    for (let i = 0; i < validWords.length; i++) {
+      const wordInfo = validWords[i];
+      const word = wordInfo.word.trim();
+
+      let start = wordInfo.start;
+      let end = wordInfo.end;
+
+      // Clamp end to midpoint of gap before next word (prevents bleed forward)
+      if (i < validWords.length - 1) {
+        const nextStart = validWords[i + 1].start;
+        if (end > nextStart) {
+          // Words overlap in Whisper output — split at midpoint
+          end = (end + nextStart) / 2;
+        } else {
+          // Gap exists — extend end to midpoint of the gap (natural tail)
+          const gap = nextStart - end;
+          end = end + Math.min(gap / 2, 0.03); // max 30ms into gap
+        }
+      }
+
+      // Clamp start to midpoint of gap after previous word (prevents bleed backward)
+      if (i > 0) {
+        const prevEnd = validWords[i - 1].end;
+        if (start < prevEnd) {
+          // Words overlap — split at midpoint
+          start = (prevEnd + start) / 2;
+        } else {
+          const gap = start - prevEnd;
+          start = start - Math.min(gap / 2, 0.03); // max 30ms into gap
+        }
+      }
+
+      start = Math.max(0, start);
 
       const { error: insertError } = await supabase
         .from('mantra_word_audio')

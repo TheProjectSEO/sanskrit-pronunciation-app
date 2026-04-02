@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import { detectWordBoundaries, filterWords, type WordBoundary } from '@/lib/audio/energy-detector';
+import WaveformEditor from '@/lib/audio/WaveformEditor';
 
 interface Deity {
   id: string;
@@ -74,6 +76,9 @@ export default function MantraDetailPage() {
   const [wordAudioList, setWordAudioList] = useState<WordAudio[]>([]);
   const [wordRefAudioUrl, setWordRefAudioUrl] = useState<string>('');
   const [playingWord, setPlayingWord] = useState<string | null>(null);
+  const [showWaveformEditor, setShowWaveformEditor] = useState(false);
+  const [detectedBoundaries, setDetectedBoundaries] = useState<WordBoundary[]>([]);
+  const [filteredWords, setFilteredWords] = useState<string[]>([]);
   const verseTransliterateTimer = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const wordAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -350,43 +355,76 @@ export default function MantraDetailPage() {
     }
   };
 
-  const handleGenerateWordAudio = async () => {
-    if (!mantra?.reference_audio_url && !mantra?.audio_url) {
+  const handleSplitAudio = async () => {
+    const audioUrl = mantra?.reference_audio_url || mantra?.audio_url;
+    if (!audioUrl) {
       setError('Reference audio is required. Please upload audio for this mantra first.');
+      return;
+    }
+
+    const referenceText = mantra?.reference_text_roman || mantra?.text_latin || '';
+    const rawWords = referenceText.trim().split(/\s+/).filter(Boolean);
+    const words = filterWords(rawWords);
+
+    if (words.length === 0) {
+      setError('No reference text found. Please add Roman text for this mantra first.');
       return;
     }
 
     try {
       setGeneratingAudio(true);
       setError(null);
-      const response = await fetch(`/api/generate-word-audio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mantra_id: mantraId }),
-      });
 
-      const data = await response.json();
+      // Decode audio to AudioBuffer in the browser
+      const response = await fetch(audioUrl);
+      if (!response.ok) throw new Error('Failed to download audio');
+      const arrayBuffer = await response.arrayBuffer();
+      const ctx = new AudioContext();
+      const buffer = await ctx.decodeAudioData(arrayBuffer);
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Word audio generation failed');
+      // Run energy-based silence detection
+      const result = detectWordBoundaries(buffer, words);
+      setDetectedBoundaries(result.boundaries);
+      setFilteredWords(words);
+      setShowWaveformEditor(true);
+
+      if (!result.success) {
+        console.warn('Energy detection partial:', result.failureReason);
       }
-
-      // Update word audio list with timestamps from the results
-      const newWords: WordAudio[] = (data.words || []).map((w: { word: string; position: number; start: number; end: number }) => ({
-        word: w.word,
-        position: w.position,
-        start_time: w.start,
-        end_time: w.end,
-      }));
-      setWordAudioList(newWords);
-      // Update reference audio URL
-      if (data.audio_url) setWordRefAudioUrl(data.audio_url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Word audio generation failed');
+      setError(err instanceof Error ? err.message : 'Audio analysis failed');
     } finally {
       setGeneratingAudio(false);
     }
   };
+
+  const handleSaveBoundaries = useCallback(async (boundaries: WordBoundary[]) => {
+    if (!mantraId) return;
+
+    const response = await fetch(`/api/instructor/mantras/${mantraId}/word-boundaries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        boundaries: boundaries.map(b => ({
+          word: b.word.toLowerCase(),
+          start: b.start,
+          end: b.end,
+        })),
+        detection_method: 'energy',
+        verified: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to save boundaries');
+    }
+
+    // Refresh word audio list and hide editor
+    await fetchWordAudio();
+    setShowWaveformEditor(false);
+    setDetectedBoundaries([]);
+  }, [mantraId]);
 
   const startEditing = () => {
     if (!mantra) return;
@@ -892,7 +930,7 @@ export default function MantraDetailPage() {
           </h2>
           {(mantra.reference_audio_url || mantra.audio_url) && (
             <button
-              onClick={handleGenerateWordAudio}
+              onClick={handleSplitAudio}
               disabled={generatingAudio}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium text-sm flex items-center gap-2"
             >
@@ -915,14 +953,25 @@ export default function MantraDetailPage() {
             <div className="flex items-center gap-3">
               <div className="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
               <div>
-                <p className="text-blue-800 font-medium text-sm">Splitting your audio into words...</p>
-                <p className="text-blue-600 text-xs">Whisper is detecting word boundaries, then extracting each word clip</p>
+                <p className="text-blue-800 font-medium text-sm">Analyzing audio waveform...</p>
+                <p className="text-blue-600 text-xs">Detecting silence regions between words for precise boundaries</p>
               </div>
             </div>
           </div>
         )}
 
-        {wordAudioList.length > 0 ? (
+        {showWaveformEditor && (mantra.reference_audio_url || mantra.audio_url) ? (
+          <WaveformEditor
+            audioUrl={(mantra.reference_audio_url || mantra.audio_url)!}
+            words={filteredWords}
+            initialBoundaries={detectedBoundaries}
+            onSave={handleSaveBoundaries}
+            onCancel={() => {
+              setShowWaveformEditor(false);
+              setDetectedBoundaries([]);
+            }}
+          />
+        ) : wordAudioList.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {wordAudioList.map((wa) => (
               <button
