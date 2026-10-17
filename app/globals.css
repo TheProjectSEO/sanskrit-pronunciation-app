@@ -3,3 +3,24 @@
 @source "../app/**/*.{js,ts,jsx,tsx}";
 @source "../components/**/*.{js,ts,jsx,tsx}";
 @source "../lib/**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  --color-brand-purple: #2E2871;
+  --color-brand-pink: #EF5DA8;
+  --color-brand-gold: #F0B100;
+  --color-card-purple: #EDEBFF;
+  --color-card-purple-light: #FAF9FF;
+  --color-card-pink: #FFECEC;
+  --color-card-pink-light: #FFF8F8;
+  --color-card-blue: #DFF3FF;
+  --color-text-secondary: #6A7282;
+  --color-icon-inactive: #8B97A8;
+}
+
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

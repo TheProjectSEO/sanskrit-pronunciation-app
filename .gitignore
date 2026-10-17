@@ -43,3 +43,6 @@ coverage/
 *.log
 .cache/
 .env*.local
+
+# Supabase CLI local cache
+supabase/.temp/
