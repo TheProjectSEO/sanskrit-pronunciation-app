@@ -12,11 +12,11 @@ const DAILY_CAP = Number(process.env.PRON_DAILY_ATTEMPT_CAP || 80);
 const MAX_BYTES = 25 * 16000 * 2 + 1024; // 25 s of 16 kHz mono 16-bit PCM
 
 export async function POST(request: NextRequest) {
-  if (process.env.PRON_PIPELINE === 'v1') return legacyAnalyze(request);
-
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
+  // Rollback switch to the old pipeline; still requires a signed-in user.
+  if (process.env.PRON_PIPELINE === 'v1') return legacyAnalyze(request);
 
   const form = await request.formData();
   const audio = form.get('audio') as File | null;
@@ -27,11 +27,9 @@ export async function POST(request: NextRequest) {
   if (!audio || !mantraId) {
     return NextResponse.json({ error: 'Recording or mantra missing.' }, { status: 400 });
   }
+  // The current client always sends WAV; anything else is an outdated client.
   if (!(audio.type || '').includes('wav')) {
-    // Older client still sending webm: serve it with the legacy pipeline.
-    const legacyForm = new FormData();
-    for (const [k, v] of form.entries()) legacyForm.append(k, v);
-    return legacyAnalyze(new NextRequest(request.url, { method: 'POST', body: legacyForm }));
+    return NextResponse.json({ error: 'Please refresh the app to get the latest version.' }, { status: 426 });
   }
   if (audio.size > MAX_BYTES) {
     return NextResponse.json({ error: 'Recording is too long. Keep it under 20 seconds.' }, { status: 413 });

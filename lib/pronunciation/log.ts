@@ -11,7 +11,11 @@ export async function attemptsToday(supabase: SupabaseClient, userId: string): P
     .select('id', { count: 'exact', head: true })
     .eq(OWNER, userId)
     .gte('created_at', new Date(Date.now() - 864e5).toISOString());
-  if (error) console.error('attempt count failed', error.message);
+  if (error) {
+    // Fail closed: if usage cannot be counted, treat the cap as reached.
+    console.error('attempt count failed', error.message);
+    return Number.POSITIVE_INFINITY;
+  }
   return count ?? 0;
 }
 
