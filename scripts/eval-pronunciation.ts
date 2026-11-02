@@ -9,11 +9,13 @@ import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getServiceSupabase } from '../lib/supabase/service';
 import { analyzeAttempt } from '../lib/pronunciation/analyze';
-import { teacherLiteral } from '../lib/pronunciation/reference';
+import { teacherJudge, teacherLiteral } from '../lib/pronunciation/reference';
+import { splitWords } from '../lib/pronunciation/phonetic';
 
 interface Clip { clip: string; mantra_id: string; label: 'good' | 'partial' | 'different'; error_words: string[]; note: string }
 
 const ROOT = join(process.cwd(), 'docs/eval');
+const calibrate = process.argv.includes('--calibrate');
 const tag = process.argv.includes('--tag') ? process.argv[process.argv.indexOf('--tag') + 1] : new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
 
 async function main() {
@@ -27,7 +29,7 @@ async function main() {
     if (!m) { console.log('missing mantra', c.mantra_id); continue; }
     const t0 = Date.now();
     const teacher = await teacherLiteral({ mantraId: c.mantra_id, audioUrl: m.reference_audio_url });
-    const r = await analyzeAttempt({ wav: readFileSync(join(ROOT, c.clip)), romanText: m.reference_text_roman, devanagariText: m.reference_text_devanagari, teacherLiteral: teacher, feedbackLanguage: 'english' });
+    const r = await analyzeAttempt({ wav: readFileSync(join(ROOT, c.clip)), romanText: m.reference_text_roman, devanagariText: m.reference_text_devanagari, teacherLiteral: teacher, teacherJudge: calibrate ? await teacherJudge({ mantraId: c.mantra_id, audioUrl: m.reference_audio_url, words: splitWords(m.reference_text_roman), devanagari: m.reference_text_devanagari }) : null, feedbackLanguage: 'english' });
     const dt = Date.now() - t0; ms += dt;
 
     const flagged = r.words.filter((w) => w.status !== 'ok').map((w) => w.word);

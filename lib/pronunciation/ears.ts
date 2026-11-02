@@ -28,6 +28,9 @@ export async function literalEar(audio: Buffer, filename: string, mime: string):
   return { text: (res.text || '').trim(), noSpeechProb, words: res.words };
 }
 
+/** Bump when the judge prompt changes, so cached teacher readings are recomputed. */
+export const JUDGE_VERSION = 'j2';
+
 const ISSUES = 'none|vowel_length|aspiration|retroflex|sibilant|visarga|anusvara|substitution|missing|extra|other';
 
 export async function judgeEar(opts: {

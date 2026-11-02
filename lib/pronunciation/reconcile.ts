@@ -3,6 +3,12 @@ import type { AttemptStatus, Band, Issue, JudgeResult, SayAgainReason, ScoredWor
 
 /** A word counts as deviating from the teacher below this literal similarity. */
 export const DEVIATION = 0.95;
+/**
+ * The judge has habits: it marks some words wrong even in the teacher's own recording
+ * (e.g. "rādhāye" for Rādhāyai, a softened final -ai). When the student's word sounds
+ * like the teacher's to the judge, that habit is the teacher's style, not an error.
+ */
+export const MATCHES_TEACHER = 0.8;
 /** Below this combined confidence we ask the student to say it again instead of scoring. */
 export const GATE = 0.6;
 
@@ -28,6 +34,8 @@ export function reconcile(opts: {
   studentLiteral: string;
   studentNoSpeech: number;
   teacherLiteral: string | null;
+  /** The judge's reading of the teacher's own recording, when available. */
+  teacherJudge?: JudgeResult | null;
 }): Reconciled {
   const { words, judge } = opts;
   const refKeys = words.map((w) => wordKeys(w).join('')).map((k) => k || '_');
@@ -65,7 +73,9 @@ export function reconcile(opts: {
     const jw = judge.words[i];
     const sim = similarity(teacherProj[i], studentProj[i]);
     const deviates = sim < DEVIATION;
-    const flagged = jw.status !== 'ok';
+    const tw = opts.teacherJudge?.words[i];
+    const teacherStyle = !!tw && tw.status !== 'ok' && !!jw.heard && !!tw.heard && similarity(wordKeys(jw.heard).join(''), wordKeys(tw.heard).join('')) >= MATCHES_TEACHER;
+    const flagged = jw.status !== 'ok' && !teacherStyle;
     if (flagged === deviates) agree++;
     let status: ScoredWord['status'] = 'ok';
     if (flagged && deviates) status = jw.status === 'minor' ? 'check' : 'wrong';

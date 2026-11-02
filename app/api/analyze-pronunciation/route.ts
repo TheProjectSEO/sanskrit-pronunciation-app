@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { analyzeAttempt } from '@/lib/pronunciation/analyze';
-import { teacherLiteral } from '@/lib/pronunciation/reference';
+import { teacherJudge, teacherLiteral } from '@/lib/pronunciation/reference';
+import { splitWords } from '@/lib/pronunciation/phonetic';
 import { legacyAnalyze } from '@/lib/pronunciation/legacy';
 import { finishAttempt, reserveAttempt } from '@/lib/pronunciation/log';
 
@@ -71,11 +72,17 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   try {
     const wav = Buffer.from(await audio.arrayBuffer());
-    const teacher = await teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
-      console.error('teacher literal failed', e);
-      return null;
-    });
-    const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, teacherLiteral: teacher, feedbackLanguage });
+    const [teacher, teacherJ] = await Promise.all([
+      teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
+        console.error('teacher literal failed', e);
+        return null;
+      }),
+      teacherJudge({ mantraId, audioUrl: mantra.reference_audio_url, verse, words: splitWords(roman), devanagari }).catch((e) => {
+        console.error('teacher judge failed', e);
+        return null;
+      }),
+    ]);
+    const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, teacherLiteral: teacher, teacherJudge: teacherJ, feedbackLanguage });
 
     await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
     return NextResponse.json({ ...result, log_id: attemptId });

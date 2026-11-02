@@ -2,13 +2,15 @@ import { judgeEar, literalEar, mergeJudges } from './ears';
 import { reconcile } from './reconcile';
 import { asLang, guruFeedback, SAY_AGAIN } from './guru';
 import { splitWords } from './phonetic';
-import type { AttemptResult, ScoredWord } from './types';
+import type { AttemptResult, JudgeResult, ScoredWord } from './types';
 
 export interface AnalyzeInput {
   wav: Buffer; // 16 kHz mono PCM WAV, preprocessed in the browser
   romanText: string;
   devanagariText: string;
   teacherLiteral: string | null;
+  /** The judge's cached reading of the teacher's recording. */
+  teacherJudge?: JudgeResult | null;
   feedbackLanguage: string;
 }
 
@@ -37,6 +39,7 @@ export async function analyzeAttempt(input: AnalyzeInput): Promise<AttemptResult
     studentLiteral: literal.text,
     studentNoSpeech: literal.noSpeechProb,
     teacherLiteral: input.teacherLiteral,
+    teacherJudge: input.teacherJudge ?? null,
   });
 
   let guru_line = '';

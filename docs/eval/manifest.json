@@ -101,5 +101,13 @@
   "error_words": [],
   "note": "synthetic TTS: correct",
   "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/live-radha-1.16k.wav",
+  "mantra_id": "448b8219-7802-4ca1-aaa5-76a43e0f6fc8",
+  "label": "good",
+  "error_words": [],
+  "note": "live 2 Nov: learner tapped 'No, wrong' on a Rādhāyai flag; teacher also softens final -yai",
+  "labelled_by": "aditya (in-app verdict)"
  }
 ]
