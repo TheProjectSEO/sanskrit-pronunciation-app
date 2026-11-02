@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { analyzeAttempt } from '@/lib/pronunciation/analyze';
-import { attemptsToday, logAttempt } from '@/lib/pronunciation/log';
+import { finishAttempt, reserveAttempt } from '@/lib/pronunciation/log';
 import { legacyAnalyzeWord } from '@/lib/pronunciation/legacy-word';
 
 export const maxDuration = 60;
@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
   if (audio.size > 8 * 16000 * 2 + 1024) return NextResponse.json({ error: 'Say just the one word.' }, { status: 413 });
 
   const supabase = getServiceSupabase();
-  if ((await attemptsToday(supabase, userId)) >= DAILY_CAP) {
+  const attemptId = await reserveAttempt(supabase, { userId, mantraId, kind: 'word', cap: DAILY_CAP });
+  if (!attemptId) {
     return NextResponse.json({ error: 'You have practised a lot today. Rest, and continue tomorrow.' }, { status: 429 });
   }
 
@@ -43,10 +44,11 @@ export async function POST(request: NextRequest) {
       teacherLiteral: null,
       feedbackLanguage: lang,
     });
-    await logAttempt(supabase, { userId, mantraId, kind: 'word', word: roman, result, startedAt, audioBytes: audio.size });
+    await finishAttempt(supabase, attemptId, { userId, kind: 'word', word: roman, result, startedAt, audioBytes: audio.size });
     return NextResponse.json(result);
   } catch (e) {
     console.error('analyze-word v2 failed', e);
+    await finishAttempt(supabase, attemptId, { userId, kind: 'word', word: roman, result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
     return NextResponse.json({ error: 'We could not listen to that recording. Please try once more.' }, { status: 502 });
   }
 }

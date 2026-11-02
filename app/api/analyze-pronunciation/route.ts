@@ -4,7 +4,7 @@ import { getServiceSupabase } from '@/lib/supabase/service';
 import { analyzeAttempt } from '@/lib/pronunciation/analyze';
 import { teacherLiteral } from '@/lib/pronunciation/reference';
 import { legacyAnalyze } from '@/lib/pronunciation/legacy';
-import { attemptsToday, logAttempt } from '@/lib/pronunciation/log';
+import { finishAttempt, reserveAttempt } from '@/lib/pronunciation/log';
 
 export const maxDuration = 60;
 
@@ -36,16 +36,15 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = getServiceSupabase();
-  if ((await attemptsToday(supabase, userId)) >= DAILY_CAP) {
-    return NextResponse.json({ error: 'You have practised a lot today. Rest, and continue tomorrow.' }, { status: 429 });
-  }
-
   const { data: mantra } = await supabase
     .from('mantras')
     .select('id, reference_text_roman, reference_text_devanagari, reference_audio_url, status')
     .eq('id', mantraId)
     .single();
-  if (!mantra) return NextResponse.json({ error: 'Mantra not found.' }, { status: 404 });
+  // Drafts are for instructors only.
+  if (!mantra || (mantra.status !== 'published' && session?.user?.role !== 'instructor')) {
+    return NextResponse.json({ error: 'Mantra not found.' }, { status: 404 });
+  }
 
   let roman = mantra.reference_text_roman as string;
   let devanagari = mantra.reference_text_devanagari as string;
@@ -64,6 +63,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const attemptId = await reserveAttempt(supabase, { userId, mantraId, kind: 'mantra', cap: DAILY_CAP });
+  if (!attemptId) {
+    return NextResponse.json({ error: 'You have practised a lot today. Rest, and continue tomorrow.' }, { status: 429 });
+  }
+
   const startedAt = Date.now();
   try {
     const wav = Buffer.from(await audio.arrayBuffer());
@@ -73,10 +77,11 @@ export async function POST(request: NextRequest) {
     });
     const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, teacherLiteral: teacher, feedbackLanguage });
 
-    const logId = await logAttempt(supabase, { userId, mantraId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
-    return NextResponse.json({ ...result, log_id: logId });
+    await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
+    return NextResponse.json({ ...result, log_id: attemptId });
   } catch (e) {
     console.error('analyze v2 failed', e);
+    await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
     return NextResponse.json({ error: 'We could not listen to that recording. Please try once more.' }, { status: 502 });
   }
 }
