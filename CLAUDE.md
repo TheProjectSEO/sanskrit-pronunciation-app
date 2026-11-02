@@ -397,3 +397,10 @@ After any change (feature, bugfix, decision, config change), run:
 /update
 ```
 This triggers the `/update` skill to sync CLAUDE.md with the latest state.
+
+### 2026-11-02 - Trust pipeline + pothi redesign (branch feat/trust-pipeline-prayer-book)
+- Pronunciation v2: whisper-1 literal ear + gpt-audio-1.5 judge (x2), errors only when both agree
+  and the learner differs from the TEACHER's recording; confidence gate -> "say it again".
+- New design world (PRODUCT.md, DESIGN.md): practice, home and auth pages rebuilt.
+- Eval harness: `npx tsx --env-file=.env.local scripts/eval-pronunciation.ts --tag <name>`.
+- Full detail and open items: docs/VOICE_AND_UX_PLAN_2026-11-02.md

@@ -1,0 +1,105 @@
+[
+ {
+  "clip": "clips/4af676d3.16k.wav",
+  "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+  "label": "good",
+  "error_words": [],
+  "note": "real: second instructor take of Gayatri",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/695a0e94.16k.wav",
+  "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+  "label": "good",
+  "error_words": [],
+  "note": "real: reference itself",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/f8e02c68.16k.wav",
+  "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+  "label": "partial",
+  "error_words": [
+   "devasya",
+   "dhīmahi"
+  ],
+  "note": "real: recited 'Deva Siddhi Mai' for 'devasya dhimahi'",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/f8031222.16k.wav",
+  "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+  "label": "good",
+  "error_words": [],
+  "note": "real: second take of Om Namah Shivaya",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/f4faafce.16k.wav",
+  "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+  "label": "good",
+  "error_words": [],
+  "note": "real: reference itself",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/d6cbae63.16k.wav",
+  "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+  "label": "different",
+  "error_words": [],
+  "note": "real: Ganapati recited for Panchakshari",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/d6cbae63.16k.wav",
+  "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+  "label": "good",
+  "error_words": [],
+  "note": "real: reference itself",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/fe0f7086.16k.wav",
+  "mantra_id": "fe0f7086-31f3-4224-984a-7515d277d97d",
+  "label": "good",
+  "error_words": [],
+  "note": "real: reference itself",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/448b8219.16k.wav",
+  "mantra_id": "448b8219-7802-4ca1-aaa5-76a43e0f6fc8",
+  "label": "good",
+  "error_words": [],
+  "note": "real: reference itself",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/syn-shivaya-missing-ya.16k.wav",
+  "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+  "label": "partial",
+  "error_words": [
+   "Shivaya"
+  ],
+  "note": "synthetic TTS: 'Om Namah Shiva'",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/syn-ganapati-dental-n.16k.wav",
+  "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+  "label": "partial",
+  "error_words": [
+   "Ganapataye"
+  ],
+  "note": "synthetic TTS: dental n in Ganapataye",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ },
+ {
+  "clip": "clips/syn-ganapati-correct.16k.wav",
+  "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+  "label": "good",
+  "error_words": [],
+  "note": "synthetic TTS: correct",
+  "labelled_by": "aditya (provisional, replace with instructor labels)"
+ }
+]

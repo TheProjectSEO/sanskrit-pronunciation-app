@@ -4,17 +4,88 @@
 @source "../components/**/*.{js,ts,jsx,tsx}";
 @source "../lib/**/*.{js,ts,jsx,tsx}";
 
-@theme {
-  --color-brand-purple: #2E2871;
-  --color-brand-pink: #EF5DA8;
-  --color-brand-gold: #F0B100;
-  --color-card-purple: #EDEBFF;
-  --color-card-purple-light: #FAF9FF;
-  --color-card-pink: #FFECEC;
-  --color-card-pink-light: #FFF8F8;
-  --color-card-blue: #DFF3FF;
-  --color-text-secondary: #6A7282;
-  --color-icon-inactive: #8B97A8;
+/*
+ * Tapaswe "pothi" world: Gita Press booklets and palm-leaf manuscripts.
+ * Turmeric-washed paper, iron-gall ink, sindoor rubrication, madder cloth.
+ * Every colour is a token; dark values follow the same roles.
+ */
+:root {
+  --paper: #f5e6b3;          /* turmeric-washed page */
+  --paper-deep: #ecd58f;     /* folio margin, pressed state */
+  --paper-edge: #d9bc6a;     /* rules and hairlines */
+  --ink: #2b1a10;            /* body text, Devanagari */
+  --ink-soft: #5b3d27;       /* secondary text (7:1 on paper) */
+  --sindoor: #a3221a;        /* rubric: verse marks, corrections, current step */
+  --sindoor-wash: #f2cfae;   /* errata slip ground */
+  --cloth: #5c1a12;          /* madder book-cloth: header band, primary action */
+  --cloth-ink: #f8ecc4;      /* text on cloth */
+  --marigold: #e8a21a;       /* recording, live state; only on cloth/ink */
+  --leaf: #2f5a2a;           /* blessing mark for a clean recitation */
+  --focus: #1f4fa3;          /* keyboard focus ring, distinct from rubric */
+  --old-purple: #2e2871;     /* legacy home tokens, retired as pages migrate */
+  --old-pink: #ef5da8;
+  --old-gold: #f0b100;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1d1410; --paper-deep: #2a1c15; --paper-edge: #5a4026;
+    --ink: #f3e3b6; --ink-soft: #d2b98a; --sindoor: #ff8a6e; --sindoor-wash: #3d1d16;
+    --cloth: #3a100b; --cloth-ink: #f5e6b3; --marigold: #f2b23a; --leaf: #8fc27f; --focus: #8fb3ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1d1410; --paper-deep: #2a1c15; --paper-edge: #5a4026;
+  --ink: #f3e3b6; --ink-soft: #d2b98a; --sindoor: #ff8a6e; --sindoor-wash: #3d1d16;
+  --cloth: #3a100b; --cloth-ink: #f5e6b3; --marigold: #f2b23a; --leaf: #8fc27f; --focus: #8fb3ff;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-deep: var(--paper-deep);
+  --color-paper-edge: var(--paper-edge);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-sindoor: var(--sindoor);
+  --color-sindoor-wash: var(--sindoor-wash);
+  --color-cloth: var(--cloth);
+  --color-cloth-ink: var(--cloth-ink);
+  --color-marigold: var(--marigold);
+  --color-leaf: var(--leaf);
+  --color-focus: var(--focus);
+
+  /* legacy names used by pages not yet migrated */
+  --color-brand-purple: var(--old-purple);
+  --color-brand-pink: var(--old-pink);
+  --color-brand-gold: var(--old-gold);
+  --color-card-purple: #edebff;
+  --color-card-purple-light: #faf9ff;
+  --color-card-pink: #ffecec;
+  --color-card-pink-light: #fff8f8;
+  --color-card-blue: #dff3ff;
+  --color-text-secondary: #6a7282;
+  --color-icon-inactive: #8b97a8;
+
+  --font-ui: var(--font-mukta), var(--font-noto-tamil), var(--font-noto-kannada), var(--font-noto-telugu), system-ui, sans-serif;
+  --font-mantra: var(--font-tiro), 'Noto Serif Devanagari', serif;
+}
+
+html { background: var(--paper); }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+}
+::selection { background: var(--sindoor); color: var(--cloth-ink); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 6px; }
+* { scrollbar-color: var(--paper-edge) transparent; }
+input, textarea { caret-color: var(--sindoor); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
 
 @utility scrollbar-hide {
@@ -24,3 +95,6 @@
     display: none;
   }
 }
+
+@utility font-mantra { font-family: var(--font-mantra); }
+@utility font-ui { font-family: var(--font-ui); }

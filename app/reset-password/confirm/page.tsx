@@ -105,12 +105,12 @@ function ResetPasswordConfirmContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 flex items-center justify-center px-4 py-12">
+      <div className="min-h-dvh bg-paper flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <div className="mx-auto w-16 h-16 bg-paper-deep rounded-full flex items-center justify-center mb-4">
               <svg
-                className="w-8 h-8 text-green-600"
+                className="w-8 h-8 text-leaf"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -123,10 +123,10 @@ function ResetPasswordConfirmContent() {
                 />
               </svg>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-semibold text-ink mb-2">
               Password Reset Successful
             </h1>
-            <p className="text-gray-600">
+            <p className="text-ink-soft">
               Your password has been successfully reset. Redirecting to sign
               in...
             </p>
@@ -137,24 +137,24 @@ function ResetPasswordConfirmContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 flex items-center justify-center px-4 py-12">
+    <div className="min-h-dvh bg-paper flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-semibold text-ink mb-2">
             Set New Password
           </h1>
-          <p className="text-gray-600">
+          <p className="text-ink-soft">
             Enter your new password below
           </p>
         </div>
 
         {/* Reset Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="border-y-[3px] border-double border-paper-edge py-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Display */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-sindoor-wash border border-sindoor/40 text-sindoor px-4 py-3 rounded-lg">
                 <p className="font-medium">{error}</p>
               </div>
             )}
@@ -163,7 +163,7 @@ function ResetPasswordConfirmContent() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
               >
                 New Password
               </label>
@@ -173,7 +173,7 @@ function ResetPasswordConfirmContent() {
                 required
                 value={formData.password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
                 placeholder="Enter new password"
                 disabled={loading || !token}
               />
@@ -181,7 +181,7 @@ function ResetPasswordConfirmContent() {
               {formData.password && (
                 <div className="mt-2 space-y-1">
                   {passwordErrors.map((err, idx) => (
-                    <p key={idx} className="text-xs text-red-600 flex items-center gap-1">
+                    <p key={idx} className="text-sm text-sindoor flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
@@ -193,7 +193,7 @@ function ResetPasswordConfirmContent() {
                     </p>
                   ))}
                   {passwordErrors.length === 0 && (
-                    <p className="text-xs text-green-600 flex items-center gap-1">
+                    <p className="text-sm text-leaf flex items-center gap-1">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
@@ -212,7 +212,7 @@ function ResetPasswordConfirmContent() {
             <div>
               <label
                 htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
               >
                 Confirm New Password
               </label>
@@ -224,12 +224,12 @@ function ResetPasswordConfirmContent() {
                 onChange={(e) =>
                   setFormData({ ...formData, confirmPassword: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
                 placeholder="Confirm new password"
                 disabled={loading || !token}
               />
               {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                <p className="mt-2 text-xs text-red-600 flex items-center gap-1">
+                <p className="mt-2 text-sm text-sindoor flex items-center gap-1">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
@@ -246,7 +246,7 @@ function ResetPasswordConfirmContent() {
             <button
               type="submit"
               disabled={loading || !token || passwordErrors.length > 0}
-              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full min-h-14 bg-cloth text-cloth-ink text-lg font-semibold px-4 rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Resetting Password...' : 'Reset Password'}
             </button>
@@ -256,7 +256,7 @@ function ResetPasswordConfirmContent() {
           <div className="mt-6 text-center">
             <Link
               href="/signin"
-              className="text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
+              className="text-sm font-medium text-sindoor underline underline-offset-4 hover:text-cloth transition-colors"
             >
               Back to Sign In
             </Link>
@@ -264,7 +264,7 @@ function ResetPasswordConfirmContent() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-sm text-ink-soft">
           Password must contain at least 8 characters with uppercase, lowercase, and numbers
         </p>
       </div>
@@ -276,8 +276,8 @@ export default function ResetPasswordConfirmPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 flex items-center justify-center">
-          <div className="text-gray-600">Loading...</div>
+        <div className="min-h-dvh bg-paper flex items-center justify-center">
+          <div className="text-ink-soft">Loading...</div>
         </div>
       }
     >

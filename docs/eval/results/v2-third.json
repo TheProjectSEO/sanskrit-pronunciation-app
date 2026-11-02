@@ -1,0 +1,250 @@
+{
+ "summary": {
+  "tag": "v2-third",
+  "clips": 12,
+  "verdict_agreement": 0.583,
+  "error_precision": 0.25,
+  "error_recall": 0.5,
+  "say_again_rate": 0,
+  "avg_ms": 7693
+ },
+ "rows": [
+  {
+   "clip": "clips/4af676d3.16k.wav",
+   "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+   "label": "good",
+   "error_words": [],
+   "note": "real: second instructor take of Gayatri",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.78,
+   "flagged": [],
+   "heard": "Aum Bhūr Bhuvah Swaha Tatsavitur Varenyam Bhargo Devasya Dhimahi Dhiyo Yonah Prachodayat",
+   "guru": "ॐ came out well, dear. Very good effort; chant it again slowly with calm breath.",
+   "ms": 9732
+  },
+  {
+   "clip": "clips/695a0e94.16k.wav",
+   "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+   "label": "good",
+   "error_words": [],
+   "note": "real: reference itself",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": false,
+   "status": "ok",
+   "band": "close",
+   "score": 85,
+   "confidence": 0.87,
+   "flagged": [
+    "tatsavitur",
+    "devasya"
+   ],
+   "heard": "ओम् भूर्भुवः स्वः तच्यवितुर्वरेन्यं भर्गो देवच्यधीमः धियो यो नः प्रचोधयात्",
+   "guru": "Your chanting was close, dear. In तत्सवितुर्, keep it as त्स, without adding a य sound.",
+   "ms": 13529
+  },
+  {
+   "clip": "clips/f8e02c68.16k.wav",
+   "mantra_id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+   "label": "partial",
+   "error_words": [
+    "devasya",
+    "dhīmahi"
+   ],
+   "note": "real: recited 'Deva Siddhi Mai' for 'devasya dhimahi'",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 85,
+   "confidence": 0.88,
+   "flagged": [
+    "devasya",
+    "naḥ"
+   ],
+   "heard": "Oṁ bhūr bhuvah svaḥ tatsa-vitur vareṇyam bhārgo devasya dhīmahi dhiyo yo na prachodayāt.",
+   "guru": "ॐ came out well, dear. Please do not skip देवस्य; say the full word clearly.",
+   "ms": 10304
+  },
+  {
+   "clip": "clips/f8031222.16k.wav",
+   "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+   "label": "good",
+   "error_words": [],
+   "note": "real: second take of Om Namah Shivaya",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.78,
+   "flagged": [],
+   "heard": "Om Namah Shivaya.",
+   "guru": "नमः came out well, dear devotee. Blessings, chant it again slowly with calm breath.",
+   "ms": 6415
+  },
+  {
+   "clip": "clips/f4faafce.16k.wav",
+   "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+   "label": "good",
+   "error_words": [],
+   "note": "real: reference itself",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.67,
+   "flagged": [],
+   "heard": "Aum Namah Shivay!",
+   "guru": "“ॐ” came out well, dear one. Bless your effort; chant it again slowly with calm breath.",
+   "ms": 4874
+  },
+  {
+   "clip": "clips/d6cbae63.16k.wav",
+   "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+   "label": "different",
+   "error_words": [],
+   "note": "real: Ganapati recited for Panchakshari",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": false,
+   "status": "ok",
+   "band": "getting_there",
+   "score": 67,
+   "confidence": 0.73,
+   "flagged": [
+    "Shivaya"
+   ],
+   "heard": "ॐ गणगण पते नमः।",
+   "guru": "ॐ came out well, dear. For शिवाय, keep only this word and do not let it become गणपते.",
+   "ms": 6648
+  },
+  {
+   "clip": "clips/d6cbae63.16k.wav",
+   "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+   "label": "good",
+   "error_words": [],
+   "note": "real: reference itself",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": false,
+   "status": "ok",
+   "band": "getting_there",
+   "score": 75,
+   "confidence": 0.7,
+   "flagged": [
+    "Ganapataye"
+   ],
+   "heard": "ॐ गणगण पते नमः।",
+   "guru": "ॐ, गं and नमः came well. Now add गणपतये clearly, without skipping it.",
+   "ms": 8742
+  },
+  {
+   "clip": "clips/fe0f7086.16k.wav",
+   "mantra_id": "fe0f7086-31f3-4224-984a-7515d277d97d",
+   "label": "good",
+   "error_words": [],
+   "note": "real: reference itself",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.75,
+   "flagged": [],
+   "heard": "Aum Namo Bhagvate Vasudevaya",
+   "guru": "ॐ came out well, dear. Your chanting is close; blessings, chant it again slowly.",
+   "ms": 5907
+  },
+  {
+   "clip": "clips/448b8219.16k.wav",
+   "mantra_id": "448b8219-7802-4ca1-aaa5-76a43e0f6fc8",
+   "label": "good",
+   "error_words": [],
+   "note": "real: reference itself",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": false,
+   "status": "ok",
+   "band": "getting_there",
+   "score": 75,
+   "confidence": 0.98,
+   "flagged": [
+    "Rādhāyai"
+   ],
+   "heard": "ओम् स्री राधाये स्वाह",
+   "guru": "ॐ came out well, dear. In राधायै, make the ending यै, not ये.",
+   "ms": 7795
+  },
+  {
+   "clip": "clips/syn-shivaya-missing-ya.16k.wav",
+   "mantra_id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+   "label": "partial",
+   "error_words": [
+    "Shivaya"
+   ],
+   "note": "synthetic TTS: 'Om Namah Shiva'",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "partial",
+   "pass": true,
+   "status": "ok",
+   "band": "getting_there",
+   "score": 67,
+   "confidence": 0.73,
+   "flagged": [
+    "Shivaya"
+   ],
+   "heard": "OM NAMAHA SIVA",
+   "guru": "ॐ came out well, very good. Now do not skip शिवाय; say it fully after नमः.",
+   "ms": 9352
+  },
+  {
+   "clip": "clips/syn-ganapati-dental-n.16k.wav",
+   "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+   "label": "partial",
+   "error_words": [
+    "Ganapataye"
+   ],
+   "note": "synthetic TTS: dental n in Ganapataye",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": false,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.84,
+   "flagged": [],
+   "heard": "OM GANG GANAPATAYE NAMAHA",
+   "guru": "ॐ came out well, and all the words are present. Good effort; chant it again slowly with devotion.",
+   "ms": 4237
+  },
+  {
+   "clip": "clips/syn-ganapati-correct.16k.wav",
+   "mantra_id": "d6cbae63-c3a9-4039-84b7-2ac542705437",
+   "label": "good",
+   "error_words": [],
+   "note": "synthetic TTS: correct",
+   "labelled_by": "aditya (provisional, replace with instructor labels)",
+   "verdict": "good",
+   "pass": true,
+   "status": "ok",
+   "band": "close",
+   "score": 100,
+   "confidence": 0.88,
+   "flagged": [],
+   "heard": "OM GUM GANAPATAYE NAMAHA",
+   "guru": "गणपतये came out well, dear one. Blessed effort; chant it again slowly with the same devotion.",
+   "ms": 4777
+  }
+ ]
+}
