@@ -10,6 +10,18 @@ export const maxDuration = 60;
 
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024;
 const MAX_PER_USER = 30;
+const MAX_CREATES_PER_DAY = 10;
+
+/** Recognises the audio containers we accept by their magic bytes. */
+function sniffAudio(b: Buffer): { ext: string; mime: string } | null {
+  if (b.length < 12) return null;
+  if (b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WAVE') return { ext: 'wav', mime: 'audio/wav' };
+  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return { ext: 'webm', mime: 'audio/webm' };
+  if (b.subarray(4, 8).toString('ascii') === 'ftyp') return { ext: 'm4a', mime: 'audio/mp4' };
+  if (b.subarray(0, 3).toString('ascii') === 'ID3' || (b[0] === 0xff && (b[1] & 0xe0) === 0xe0)) return { ext: 'mp3', mime: 'audio/mpeg' };
+  if (b.subarray(0, 4).toString('ascii') === 'OggS') return { ext: 'ogg', mime: 'audio/ogg' };
+  return null;
+}
 
 /** The signed-in user's own recordings. */
 export async function GET() {
@@ -46,8 +58,18 @@ export async function POST(request: NextRequest) {
   if ((count ?? 0) >= MAX_PER_USER) return NextResponse.json({ error: 'You have reached the limit of recordings. Delete one to add another.' }, { status: 429 });
 
   const buffer = Buffer.from(await audio.arrayBuffer());
-  const mime = audio.type || 'audio/webm';
-  const ext = mime.includes('wav') ? 'wav' : mime.includes('mp4') || mime.includes('m4a') ? 'm4a' : mime.includes('mpeg') || mime.includes('mp3') ? 'mp3' : 'webm';
+  // The type comes from the file's own bytes, never from what the browser claims.
+  const kind = sniffAudio(buffer);
+  if (!kind) return NextResponse.json({ error: 'Please upload an audio recording (webm, wav, mp3 or m4a).' }, { status: 415 });
+  const { ext, mime } = kind;
+
+  // Creating a recording can call paid transcription, so creations are counted per day
+  // in the attempt log (deleting a recording does not give the slot back).
+  const { count: today } = await sb.from('pronunciation_logs').select('id', { count: 'exact', head: true })
+    .eq('metadata->>user_id', userId).eq('metadata->>kind', 'ugc_create')
+    .gte('created_at', new Date(Date.now() - 864e5).toISOString());
+  if ((today ?? 0) >= MAX_CREATES_PER_DAY) return NextResponse.json({ error: 'You have added enough recordings for today. Please continue tomorrow.' }, { status: 429 });
+  await sb.from('pronunciation_logs').insert({ session_id: `user:${userId}`, mantra_id: 'ugc', success: true, metadata: { user_id: userId, kind: 'ugc_create' } });
 
   try {
     // No text given: write down exactly what was recited, then fill the other script.
