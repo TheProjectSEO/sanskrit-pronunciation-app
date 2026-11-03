@@ -234,7 +234,7 @@ export default function PracticePage() {
       fd.append('feedback_language', lang);
       setCheckStage('sending');
       setGuruPending(false);
-      const res = await fetch('/api/analyze-pronunciation', { method: 'POST', body: fd });
+      const res = await fetch('/api/analyze-pronunciation', { method: 'POST', body: fd, headers: { Accept: 'application/x-ndjson' } });
       // Refusals (sign-in, daily limit, too long) come back as plain JSON with an error status.
       if (!res.ok || !res.body || !(res.headers.get('content-type') || '').includes('ndjson')) {
         const data = await res.json().catch(() => ({}));

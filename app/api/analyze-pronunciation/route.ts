@@ -79,6 +79,35 @@ export async function POST(request: NextRequest) {
     return { ...pub, log_id: attemptId, ...(admin ? { debug } : {}) };
   };
 
+  const teacherArgs = {
+    teacherLiteral: teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
+      console.error('teacher literal failed', e);
+      return null;
+    }),
+    teacherJudge: teacherJudge({ mantraId, audioUrl: mantra.reference_audio_url, verse, words: splitWords(roman), devanagari }).catch((e) => {
+      console.error('teacher judge failed', e);
+      return null;
+    }),
+  };
+  const failed = async (e: unknown) => {
+    console.error('analyze v2 failed', e);
+    await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
+  };
+  const sorry = 'We could not listen to that recording. Please try once more.';
+
+  // A page loaded before the streaming update expects one JSON reply; only pages that
+  // ask for NDJSON get the step-by-step stream. (Tabs left open across a deploy.)
+  if (!(request.headers.get('accept') || '').includes('application/x-ndjson')) {
+    try {
+      const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, ...teacherArgs, feedbackLanguage });
+      await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
+      return NextResponse.json(strip(result));
+    } catch (e) {
+      await failed(e);
+      return NextResponse.json({ error: sorry }, { status: 502 });
+    }
+  }
+
   // NDJSON, one message per line, so the learner sees real progress:
   //   {stage:'listening'} -> {type:'scored', result} (words judged) -> {type:'done', result} (with the guru's line)
   // Errors after this point arrive in-band as {type:'error'}, because the 200 status is already sent.
@@ -93,23 +122,15 @@ export async function POST(request: NextRequest) {
           romanText: roman,
           devanagariText: devanagari,
           // Passed as promises: the teacher cache loads while the ears are already listening.
-          teacherLiteral: teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
-            console.error('teacher literal failed', e);
-            return null;
-          }),
-          teacherJudge: teacherJudge({ mantraId, audioUrl: mantra.reference_audio_url, verse, words: splitWords(roman), devanagari }).catch((e) => {
-            console.error('teacher judge failed', e);
-            return null;
-          }),
+          ...teacherArgs,
           feedbackLanguage,
           onScored: (partial) => send({ type: 'scored', result: strip(partial) }),
         });
         await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
         send({ type: 'done', result: strip(result) });
       } catch (e) {
-        console.error('analyze v2 failed', e);
-        await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
-        send({ type: 'error', error: 'We could not listen to that recording. Please try once more.' });
+        await failed(e);
+        send({ type: 'error', error: sorry });
       } finally {
         controller.close();
       }
