@@ -48,3 +48,4 @@ coverage/
 supabase/.temp/
 .env*
 docs/calls/*.json
+.venv-align/

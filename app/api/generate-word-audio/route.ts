@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import OpenAI from 'openai';
+import { splitWords } from '@/lib/pronunciation/phonetic';
+import { toPcm } from '@/lib/pronunciation/reference';
+import { alignWords, pcmSamples, projectRough } from '@/lib/audio/word-split';
 
 let _openai: OpenAI;
 function getOpenAI() {
@@ -75,78 +78,23 @@ export async function POST(request: NextRequest) {
 
     console.log(`Detected ${words.length} words:`, words.map(w => `${w.word}(${w.start}-${w.end})`).join(', '));
 
-    // Step 3: Delete existing word audio for this mantra
-    await supabase
-      .from('mantra_word_audio')
-      .delete()
-      .eq('mantra_id', mantra_id);
+    // Step 3: one clip per word of the mantra text (not per Whisper word, which can split
+    // or join words and shift every button after it). Whisper's times are the rough guide;
+    // cuts move into the teacher's pauses and clips are trimmed to the voice.
+    const textWords = splitWords(mantra.reference_text_roman || mantra.text_latin || '');
+    const targetWords = textWords.length ? textWords : words.map((w) => w.word.trim()).filter(Boolean);
+    const pcm = pcmSamples(await toPcm(audioBuffer));
+    const spans = alignWords(pcm, targetWords, projectRough(targetWords, words));
 
-    // Step 4: Store timestamps in DB (no FFmpeg, no file splitting needed)
-    // Use midpoint clamping: each word's boundaries are clamped to the
-    // midpoint of the gap between adjacent words. This prevents any overlap
-    // that causes audio bleed (hearing "Om n..." instead of just "Om").
-    const processedWords: Array<{ word: string; position: number; start: number; end: number }> = [];
-
-    // Filter out empty words first so indexing is correct
-    const validWords = words.filter(w => w.word.trim());
-
-    for (let i = 0; i < validWords.length; i++) {
-      const wordInfo = validWords[i];
-      const word = wordInfo.word.trim();
-
-      let start = wordInfo.start;
-      let end = wordInfo.end;
-
-      // Clamp end to midpoint of gap before next word (prevents bleed forward)
-      if (i < validWords.length - 1) {
-        const nextStart = validWords[i + 1].start;
-        if (end > nextStart) {
-          // Words overlap in Whisper output — split at midpoint
-          end = (end + nextStart) / 2;
-        } else {
-          // Gap exists — extend end to midpoint of the gap (natural tail)
-          const gap = nextStart - end;
-          end = end + Math.min(gap / 2, 0.03); // max 30ms into gap
-        }
-      }
-
-      // Clamp start to midpoint of gap after previous word (prevents bleed backward)
-      if (i > 0) {
-        const prevEnd = validWords[i - 1].end;
-        if (start < prevEnd) {
-          // Words overlap — split at midpoint
-          start = (prevEnd + start) / 2;
-        } else {
-          const gap = start - prevEnd;
-          start = start - Math.min(gap / 2, 0.03); // max 30ms into gap
-        }
-      }
-
-      start = Math.max(0, start);
-
-      const { error: insertError } = await supabase
-        .from('mantra_word_audio')
-        .insert({
-          mantra_id,
-          word: word.toLowerCase(),
-          word_position: i,
-          start_time: start,
-          end_time: end,
-        });
-
-      if (insertError) {
-        console.error(`Insert failed for word "${word}":`, insertError);
-        continue;
-      }
-
-      processedWords.push({
-        word,
-        position: i,
-        start,
-        end,
-      });
-
-      console.log(`Stored word ${i + 1}/${words.length}: "${word}" (${start.toFixed(3)}s - ${end.toFixed(3)}s)`);
+    // Step 4: replace the stored boundaries
+    await supabase.from('mantra_word_audio').delete().eq('mantra_id', mantra_id);
+    const processedWords = targetWords.map((word, i) => ({ word, position: i, start: spans[i].start, end: spans[i].end }));
+    const { error: insertError } = await supabase.from('mantra_word_audio').insert(
+      processedWords.map((w) => ({ mantra_id, word: w.word.toLowerCase(), word_position: w.position, start_time: w.start, end_time: w.end })),
+    );
+    if (insertError) {
+      console.error('Word boundary insert failed:', insertError);
+      return NextResponse.json({ error: 'Could not save word boundaries.' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -154,7 +102,7 @@ export async function POST(request: NextRequest) {
       mantra_id,
       source: 'instructor_voice',
       audio_url: audioUrl,
-      total_words: words.length,
+      total_words: targetWords.length,
       processed_words: processedWords.length,
       words: processedWords,
     });

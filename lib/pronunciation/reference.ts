@@ -99,7 +99,7 @@ function wavHeader(dataBytes: number): Buffer {
 }
 
 /** Raw 16 kHz mono PCM of any recording, via the bundled ffmpeg. */
-async function toPcm(audio: Buffer): Promise<Buffer> {
+export async function toPcm(audio: Buffer): Promise<Buffer> {
   const { spawn } = await import('child_process');
   const ffmpegPath = (await import('ffmpeg-static')).default as unknown as string;
   return new Promise((resolve, reject) => {

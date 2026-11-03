@@ -1,0 +1,1190 @@
+[
+ {
+  "id": "ccc70353-7280-471e-a52c-74bdae47df01",
+  "name": "Hare Krishna Hare Krishna Hare Krishna Hare Hare Hare Rama Hare Rama Rama Rama Hare Hare",
+  "words": [
+   {
+    "word": "Hare",
+    "old": {
+     "start": 1.39000005722046,
+     "end": 2.29000000953674
+    },
+    "new": {
+     "start": 1.82,
+     "end": 2.14
+    }
+   },
+   {
+    "word": "Krishna",
+    "old": {
+     "start": 2.19000000953674,
+     "end": 2.62999992370605
+    },
+    "new": {
+     "start": 2.14,
+     "end": 2.73
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 2.52999992370605,
+     "end": 3.06999998092651
+    },
+    "new": {
+     "start": 2.73,
+     "end": 3.05
+    }
+   },
+   {
+    "word": "Krishna",
+    "old": {
+     "start": 2.96999998092651,
+     "end": 3.66999988555908
+    },
+    "new": {
+     "start": 3.05,
+     "end": 3.735
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 3.56999988555908,
+     "end": 4.22999982833862
+    },
+    "new": {
+     "start": 3.84,
+     "end": 4.15
+    }
+   },
+   {
+    "word": "Krishna",
+    "old": {
+     "start": 4.12999982833862,
+     "end": 4.62999992370605
+    },
+    "new": {
+     "start": 4.15,
+     "end": 4.65
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 4.52999992370605,
+     "end": 4.97000007629395
+    },
+    "new": {
+     "start": 4.65,
+     "end": 4.94
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 4.87000007629395,
+     "end": 5.51000003814697
+    },
+    "new": {
+     "start": 4.94,
+     "end": 5.355
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 5.56999988555908,
+     "end": 5.97000007629395
+    },
+    "new": {
+     "start": 5.57,
+     "end": 5.86
+    }
+   },
+   {
+    "word": "Rama",
+    "old": {
+     "start": 5.87000007629395,
+     "end": 6.26999979019165
+    },
+    "new": {
+     "start": 5.86,
+     "end": 6.28
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 6.16999979019165,
+     "end": 6.62999992370605
+    },
+    "new": {
+     "start": 6.28,
+     "end": 6.58
+    }
+   },
+   {
+    "word": "Rama",
+    "old": {
+     "start": 6.52999992370605,
+     "end": 7.03000001907349
+    },
+    "new": {
+     "start": 6.58,
+     "end": 7.015
+    }
+   },
+   {
+    "word": "Rama",
+    "old": {
+     "start": 6.93000001907349,
+     "end": 7.89000015258789
+    },
+    "new": {
+     "start": 7.34,
+     "end": 7.84
+    }
+   },
+   {
+    "word": "Rama",
+    "old": {
+     "start": 7.79000015258789,
+     "end": 8.65000038146973
+    },
+    "new": {
+     "start": 7.84,
+     "end": 8.29
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 8.55000038146973,
+     "end": 8.65000038146973
+    },
+    "new": {
+     "start": 8.29,
+     "end": 8.6
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 8.55000038146973,
+     "end": 8.86999969482422
+    },
+    "new": {
+     "start": 8.6,
+     "end": 8.935
+    }
+   }
+  ]
+ },
+ {
+  "id": "fe0f7086-31f3-4224-984a-7515d277d97d",
+  "name": "Om Namo Bhagavate Vasudevaya.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 1.55000002384186,
+     "end": 3.05
+    },
+    "new": {
+     "start": 2.32,
+     "end": 2.99
+    }
+   },
+   {
+    "word": "Namo",
+    "old": {
+     "start": 2.95,
+     "end": 3.60999994277954
+    },
+    "new": {
+     "start": 2.99,
+     "end": 3.645
+    }
+   },
+   {
+    "word": "Bhagavate",
+    "old": {
+     "start": 3.50999994277954,
+     "end": 4.83000020980835
+    },
+    "new": {
+     "start": 3.87,
+     "end": 4.775
+    }
+   },
+   {
+    "word": "Vasudevaya",
+    "old": {
+     "start": 4.73000020980835,
+     "end": 6.39000015258789
+    },
+    "new": {
+     "start": 4.92,
+     "end": 6.125
+    }
+   }
+  ]
+ },
+ {
+  "id": "b290a9a9-f7ab-498a-b399-7a9710eef8b2",
+  "name": "ओम एंग रिंग क्लिंग चामुण्डाई विच्चे",
+  "words": [
+   {
+    "word": "ओम",
+    "old": {
+     "start": 0,
+     "end": 1.79000000953674
+    },
+    "new": {
+     "start": 1.02,
+     "end": 2.39
+    }
+   },
+   {
+    "word": "एंग",
+    "old": {
+     "start": 1.69000000953674,
+     "end": 2.75000004768372
+    },
+    "new": {
+     "start": 2.39,
+     "end": 2.915
+    }
+   },
+   {
+    "word": "रिंग",
+    "old": {
+     "start": 2.65000004768372,
+     "end": 3.95000009536743
+    },
+    "new": {
+     "start": 3.27,
+     "end": 4.055
+    }
+   },
+   {
+    "word": "क्लिंग",
+    "old": {
+     "start": 3.85000009536743,
+     "end": 5.12999992370605
+    },
+    "new": {
+     "start": 4.44,
+     "end": 5.155
+    }
+   },
+   {
+    "word": "चामुण्डाई",
+    "old": {
+     "start": 5.02999992370605,
+     "end": 6.66999988555908
+    },
+    "new": {
+     "start": 5.59,
+     "end": 6.705
+    }
+   },
+   {
+    "word": "विच्चे",
+    "old": {
+     "start": 6.56999988555908,
+     "end": 8.1100004196167
+    },
+    "new": {
+     "start": 6.87,
+     "end": 7.695
+    }
+   }
+  ]
+ },
+ {
+  "id": "e296aef4-f31c-4a1c-b03d-6d838fea7154",
+  "name": "Om Shreemata Shreemaharagni Shreemat Singhasaneshwari Chidagnikunda Sambhuta Devakaryasamudhyata.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 4.79000015258789,
+     "end": 6.28999977111816
+    },
+    "new": {
+     "start": 3.95,
+     "end": 5.715
+    }
+   },
+   {
+    "word": "Shreemata",
+    "old": {
+     "start": 6.18999977111816,
+     "end": 7.6899998664856
+    },
+    "new": {
+     "start": 6.32,
+     "end": 7.76
+    }
+   },
+   {
+    "word": "Shreemaharagni",
+    "old": {
+     "start": 7.5899998664856,
+     "end": 9.97000007629395
+    },
+    "new": {
+     "start": 7.76,
+     "end": 10.045
+    }
+   },
+   {
+    "word": "Shreemat",
+    "old": {
+     "start": 9.87000007629394,
+     "end": 11.4700000762939
+    },
+    "new": {
+     "start": 10.45,
+     "end": 11.27
+    }
+   },
+   {
+    "word": "Singhasaneshwari",
+    "old": {
+     "start": 11.3700000762939,
+     "end": 13.589999961853
+    },
+    "new": {
+     "start": 11.27,
+     "end": 13.635
+    }
+   },
+   {
+    "word": "Chidagnikunda",
+    "old": {
+     "start": 13.489999961853,
+     "end": 15.589999961853
+    },
+    "new": {
+     "start": 14.21,
+     "end": 15.6
+    }
+   },
+   {
+    "word": "Sambhuta",
+    "old": {
+     "start": 15.489999961853,
+     "end": 16.7099998474121
+    },
+    "new": {
+     "start": 15.6,
+     "end": 17.125
+    }
+   },
+   {
+    "word": "Devakaryasamudhyata",
+    "old": {
+     "start": 16.6099998474121,
+     "end": 20.1099994659424
+    },
+    "new": {
+     "start": 17.46,
+     "end": 20.585
+    }
+   }
+  ]
+ },
+ {
+  "id": "f8031222-905a-4b65-a9db-e68a3a6655f2",
+  "name": "Om Namah Shivaya.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 0,
+     "end": 1.46999995708466
+    },
+    "new": {
+     "start": 1.01,
+     "end": 1.39
+    }
+   },
+   {
+    "word": "Namah",
+    "old": {
+     "start": 1.36999995708466,
+     "end": 1.84999995231628
+    },
+    "new": {
+     "start": 1.39,
+     "end": 1.76
+    }
+   },
+   {
+    "word": "Shivaya",
+    "old": {
+     "start": 1.74999995231628,
+     "end": 2.29000000953674
+    },
+    "new": {
+     "start": 1.76,
+     "end": 2.415
+    }
+   }
+  ]
+ },
+ {
+  "id": "4af676d3-6f58-4c39-ae2b-2b2d226c5f0f",
+  "name": "Om Bhur Bhuvah Swaha. Tatsavitur Varenyam. Bhargo Devasya Dhimahi. Dhiyo Yonah Prachodayat.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 0.989999961853027,
+     "end": 1.91000001430511
+    },
+    "new": {
+     "start": 1.45,
+     "end": 1.83
+    }
+   },
+   {
+    "word": "Bhur",
+    "old": {
+     "start": 1.81000001430511,
+     "end": 2.21000008583069
+    },
+    "new": {
+     "start": 1.83,
+     "end": 2.16
+    }
+   },
+   {
+    "word": "Bhuvah",
+    "old": {
+     "start": 2.11000008583069,
+     "end": 2.58999996185303
+    },
+    "new": {
+     "start": 2.16,
+     "end": 2.48
+    }
+   },
+   {
+    "word": "Swaha",
+    "old": {
+     "start": 2.48999996185303,
+     "end": 3.12999992370605
+    },
+    "new": {
+     "start": 2.48,
+     "end": 3.015
+    }
+   },
+   {
+    "word": "Tatsavitur",
+    "old": {
+     "start": 3.39000005722046,
+     "end": 4.08999996185303
+    },
+    "new": {
+     "start": 3.34,
+     "end": 4.01
+    }
+   },
+   {
+    "word": "Varenyam",
+    "old": {
+     "start": 3.98999996185303,
+     "end": 5.16999988555908
+    },
+    "new": {
+     "start": 4.01,
+     "end": 4.795
+    }
+   },
+   {
+    "word": "Bhargo",
+    "old": {
+     "start": 5.45,
+     "end": 5.74999980926514
+    },
+    "new": {
+     "start": 5.2,
+     "end": 5.69
+    }
+   },
+   {
+    "word": "Devasya",
+    "old": {
+     "start": 5.64999980926514,
+     "end": 6.35000019073486
+    },
+    "new": {
+     "start": 5.69,
+     "end": 6.28
+    }
+   },
+   {
+    "word": "Dhimahi",
+    "old": {
+     "start": 6.25000019073486,
+     "end": 6.99000005722046
+    },
+    "new": {
+     "start": 6.28,
+     "end": 6.915
+    }
+   },
+   {
+    "word": "Dhiyo",
+    "old": {
+     "start": 7.33000011444092,
+     "end": 7.72999982833862
+    },
+    "new": {
+     "start": 7.21,
+     "end": 7.65
+    }
+   },
+   {
+    "word": "Yonah",
+    "old": {
+     "start": 7.62999982833862,
+     "end": 8.1100004196167
+    },
+    "new": {
+     "start": 7.65,
+     "end": 8.04
+    }
+   },
+   {
+    "word": "Prachodayat",
+    "old": {
+     "start": 8.0100004196167,
+     "end": 8.89000015258789
+    },
+    "new": {
+     "start": 8.04,
+     "end": 8.865
+    }
+   }
+  ]
+ },
+ {
+  "id": "cf828602-0a0b-47f6-aef0-cb5a1d0d0c13",
+  "name": "Om Krishnaye Vāsudevaye Hare Paramātmane Pranatah Klesh Nāshaye Govindaye Namo Namah.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 2.15000004768372,
+     "end": 3.64999990463257
+    },
+    "new": {
+     "start": 3.01,
+     "end": 3.72
+    }
+   },
+   {
+    "word": "Krishnaye",
+    "old": {
+     "start": 3.54999990463257,
+     "end": 4.83000020980835
+    },
+    "new": {
+     "start": 3.72,
+     "end": 4.74
+    }
+   },
+   {
+    "word": "Vāsudevaye",
+    "old": {
+     "start": 4.73000020980835,
+     "end": 6.4100001335144
+    },
+    "new": {
+     "start": 4.74,
+     "end": 6.435
+    }
+   },
+   {
+    "word": "Hare",
+    "old": {
+     "start": 6.3100001335144,
+     "end": 7.51000003814697
+    },
+    "new": {
+     "start": 6.91,
+     "end": 7.775
+    }
+   },
+   {
+    "word": "Paramātmane",
+    "old": {
+     "start": 7.41000003814697,
+     "end": 9.74999980926514
+    },
+    "new": {
+     "start": 8.05,
+     "end": 9.445
+    }
+   },
+   {
+    "word": "Pranatah",
+    "old": {
+     "start": 9.64999980926514,
+     "end": 10.9899995803833
+    },
+    "new": {
+     "start": 9.79,
+     "end": 10.785
+    }
+   },
+   {
+    "word": "Klesh",
+    "old": {
+     "start": 10.8899995803833,
+     "end": 11.510000038147
+    },
+    "new": {
+     "start": 10.97,
+     "end": 11.52
+    }
+   },
+   {
+    "word": "Nāshaye",
+    "old": {
+     "start": 11.410000038147,
+     "end": 12.6500003814697
+    },
+    "new": {
+     "start": 11.52,
+     "end": 12.655
+    }
+   },
+   {
+    "word": "Govindaye",
+    "old": {
+     "start": 12.5500003814697,
+     "end": 14.4499996185303
+    },
+    "new": {
+     "start": 12.95,
+     "end": 14.41
+    }
+   },
+   {
+    "word": "Namo",
+    "old": {
+     "start": 14.3499996185303,
+     "end": 15.0299995422363
+    },
+    "new": {
+     "start": 14.41,
+     "end": 14.95
+    }
+   },
+   {
+    "word": "Namah",
+    "old": {
+     "start": 14.9299995422363,
+     "end": 15.5299995422363
+    },
+    "new": {
+     "start": 14.95,
+     "end": 15.985
+    }
+   }
+  ]
+ },
+ {
+  "id": "f9fdd87a-636e-412d-8718-33c3e9337417",
+  "name": "Om Trayambakam Yajamahe Sugandhim Pushti Vardhanam, Urvah Rukmiv Bandhanam, Mrityur Mukhshyam Amrita",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 0,
+     "end": 1.15000002384186
+    },
+    "new": {
+     "start": 0.72,
+     "end": 1.17
+    }
+   },
+   {
+    "word": "Trayambakam",
+    "old": {
+     "start": 1.05000002384186,
+     "end": 1.96999995708466
+    },
+    "new": {
+     "start": 1.17,
+     "end": 1.91
+    }
+   },
+   {
+    "word": "Yajamahe",
+    "old": {
+     "start": 1.86999995708466,
+     "end": 2.99000005722046
+    },
+    "new": {
+     "start": 1.91,
+     "end": 2.72
+    }
+   },
+   {
+    "word": "Sugandhim",
+    "old": {
+     "start": 2.89000005722046,
+     "end": 3.38999991416931
+    },
+    "new": {
+     "start": 2.72,
+     "end": 3.35
+    }
+   },
+   {
+    "word": "Pushti",
+    "old": {
+     "start": 3.28999991416931,
+     "end": 3.84999995231628
+    },
+    "new": {
+     "start": 3.35,
+     "end": 3.8
+    }
+   },
+   {
+    "word": "Vardhanam",
+    "old": {
+     "start": 3.74999995231628,
+     "end": 4.6899998664856
+    },
+    "new": {
+     "start": 3.8,
+     "end": 4.425
+    }
+   },
+   {
+    "word": "Urvah",
+    "old": {
+     "start": 4.91000003814697,
+     "end": 5.22999982833862
+    },
+    "new": {
+     "start": 4.65,
+     "end": 5.14
+    }
+   },
+   {
+    "word": "Rukmiv",
+    "old": {
+     "start": 5.12999982833862,
+     "end": 5.66999988555908
+    },
+    "new": {
+     "start": 5.14,
+     "end": 5.66
+    }
+   },
+   {
+    "word": "Bandhanam",
+    "old": {
+     "start": 5.56999988555908,
+     "end": 6.66999988555908
+    },
+    "new": {
+     "start": 5.66,
+     "end": 6.505
+    }
+   },
+   {
+    "word": "Mrityur",
+    "old": {
+     "start": 6.89000005722046,
+     "end": 7.24999980926514
+    },
+    "new": {
+     "start": 6.59,
+     "end": 7.18
+    }
+   },
+   {
+    "word": "Mukhshyam",
+    "old": {
+     "start": 7.14999980926514,
+     "end": 7.81000022888184
+    },
+    "new": {
+     "start": 7.18,
+     "end": 7.75
+    }
+   },
+   {
+    "word": "Amritat",
+    "old": {
+     "start": 7.71000022888184,
+     "end": 8.43000011444092
+    },
+    "new": {
+     "start": 7.75,
+     "end": 8.375
+    }
+   }
+  ]
+ },
+ {
+  "id": "f8e02c68-245b-47ac-aec5-fe945ea3e8ad",
+  "name": "Om Bhur Bhuva Swaha. Tatsavitur Varenyam. Bhargo Deva Siddhi Mai. Diyo Yonah Prachodayat.",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 0.930000019073486,
+     "end": 1.79000000953674
+    },
+    "new": {
+     "start": 1.38,
+     "end": 1.74
+    }
+   },
+   {
+    "word": "Bhur",
+    "old": {
+     "start": 1.69000000953674,
+     "end": 2.12999992370605
+    },
+    "new": {
+     "start": 1.74,
+     "end": 2.05
+    }
+   },
+   {
+    "word": "Bhuva",
+    "old": {
+     "start": 2.02999992370605,
+     "end": 2.45000009536743
+    },
+    "new": {
+     "start": 2.05,
+     "end": 2.38
+    }
+   },
+   {
+    "word": "Swaha",
+    "old": {
+     "start": 2.35000009536743,
+     "end": 3.06999998092651
+    },
+    "new": {
+     "start": 2.38,
+     "end": 2.855
+    }
+   },
+   {
+    "word": "Tatsavitur",
+    "old": {
+     "start": 3.2699999332428,
+     "end": 3.8699999332428
+    },
+    "new": {
+     "start": 3.13,
+     "end": 3.8
+    }
+   },
+   {
+    "word": "Varenyam",
+    "old": {
+     "start": 3.7699999332428,
+     "end": 4.60999994277954
+    },
+    "new": {
+     "start": 3.8,
+     "end": 4.565
+    }
+   },
+   {
+    "word": "Bhargo",
+    "old": {
+     "start": 5.00999994277954,
+     "end": 5.31000022888184
+    },
+    "new": {
+     "start": 4.79,
+     "end": 5.23
+    }
+   },
+   {
+    "word": "Deva",
+    "old": {
+     "start": 5.21000022888184,
+     "end": 5.6899998664856
+    },
+    "new": {
+     "start": 5.23,
+     "end": 5.65
+    }
+   },
+   {
+    "word": "Siddhi",
+    "old": {
+     "start": 5.5899998664856,
+     "end": 6.08999996185303
+    },
+    "new": {
+     "start": 5.65,
+     "end": 5.94
+    }
+   },
+   {
+    "word": "Mai",
+    "old": {
+     "start": 5.98999996185303,
+     "end": 6.35000019073486
+    },
+    "new": {
+     "start": 5.94,
+     "end": 6.415
+    }
+   },
+   {
+    "word": "Diyo",
+    "old": {
+     "start": 6.8100001335144,
+     "end": 7.06999998092651
+    },
+    "new": {
+     "start": 6.6,
+     "end": 6.99
+    }
+   },
+   {
+    "word": "Yonah",
+    "old": {
+     "start": 6.96999998092651,
+     "end": 7.39000015258789
+    },
+    "new": {
+     "start": 6.99,
+     "end": 7.32
+    }
+   },
+   {
+    "word": "Prachodayat",
+    "old": {
+     "start": 7.29000015258789,
+     "end": 8.12999992370606
+    },
+    "new": {
+     "start": 7.32,
+     "end": 8.055
+    }
+   }
+  ]
+ },
+ {
+  "id": "695a0e94-906b-4551-9ba4-3a26a93118e6",
+  "name": "Gayatri Mantra",
+  "words": [
+   {
+    "word": "oṃ",
+    "old": null,
+    "new": {
+     "start": 1.29,
+     "end": 2.31
+    }
+   },
+   {
+    "word": "bhūr",
+    "old": null,
+    "new": {
+     "start": 2.31,
+     "end": 3.38
+    }
+   },
+   {
+    "word": "bhuvaḥ",
+    "old": null,
+    "new": {
+     "start": 3.4,
+     "end": 4.04
+    }
+   },
+   {
+    "word": "svaḥ",
+    "old": null,
+    "new": {
+     "start": 4.08,
+     "end": 4.925
+    }
+   },
+   {
+    "word": "tatsavitur",
+    "old": null,
+    "new": {
+     "start": 5.48,
+     "end": 7.34
+    }
+   },
+   {
+    "word": "vareṇyaṃ",
+    "old": null,
+    "new": {
+     "start": 7.34,
+     "end": 8.975
+    }
+   },
+   {
+    "word": "bhargo",
+    "old": null,
+    "new": {
+     "start": 9.61,
+     "end": 10.94
+    }
+   },
+   {
+    "word": "devasya",
+    "old": null,
+    "new": {
+     "start": 10.94,
+     "end": 12.51
+    }
+   },
+   {
+    "word": "dhīmahi",
+    "old": null,
+    "new": {
+     "start": 12.51,
+     "end": 14.075
+    }
+   },
+   {
+    "word": "dhiyo",
+    "old": null,
+    "new": {
+     "start": 14.57,
+     "end": 15.61
+    }
+   },
+   {
+    "word": "yo",
+    "old": null,
+    "new": {
+     "start": 15.61,
+     "end": 16.365
+    }
+   },
+   {
+    "word": "naḥ",
+    "old": null,
+    "new": {
+     "start": 16.37,
+     "end": 17.07
+    }
+   },
+   {
+    "word": "pracodayāt",
+    "old": null,
+    "new": {
+     "start": 17.07,
+     "end": 18.825
+    }
+   }
+  ]
+ },
+ {
+  "id": "448b8219-7802-4ca1-aaa5-76a43e0f6fc8",
+  "name": "Radha Mantra",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 1.36999995708466,
+     "end": 2.8699999332428
+    },
+    "new": {
+     "start": 1.85,
+     "end": 2.935
+    }
+   },
+   {
+    "word": "Śrī",
+    "old": {
+     "start": 2.7699999332428,
+     "end": 4.08999996185303
+    },
+    "new": {
+     "start": 3.07,
+     "end": 3.95
+    }
+   },
+   {
+    "word": "Rādhāyai",
+    "old": {
+     "start": 3.98999996185303,
+     "end": 5.45000009536743
+    },
+    "new": {
+     "start": 3.95,
+     "end": 5.485
+    }
+   },
+   {
+    "word": "Svāhā",
+    "old": {
+     "start": 5.35000009536743,
+     "end": 6.55
+    },
+    "new": {
+     "start": 5.55,
+     "end": 6.625
+    }
+   }
+  ]
+ },
+ {
+  "id": "f4faafce-034f-43d8-864c-9bc2850628bc",
+  "name": "Panchakshari Mantra",
+  "words": [
+   {
+    "word": "Om",
+    "old": {
+     "start": 1.48999996185303,
+     "end": 2.99000005722046
+    },
+    "new": {
+     "start": 2.21,
+     "end": 2.945
+    }
+   },
+   {
+    "word": "Namah",
+    "old": {
+     "start": 2.89000005722046,
+     "end": 3.82999997138977
+    },
+    "new": {
+     "start": 3.05,
+     "end": 3.565
+    }
+   },
+   {
+    "word": "Shivaya",
+    "old": {
+     "start": 3.72999997138977,
+     "end": 4.12999992370605
+    },
+    "new": {
+     "start": 3.65,
+     "end": 4.245
+    }
+   }
+  ]
+ }
+]
