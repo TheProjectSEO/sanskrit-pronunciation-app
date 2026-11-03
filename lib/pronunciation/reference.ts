@@ -98,16 +98,30 @@ function wavHeader(dataBytes: number): Buffer {
   return h;
 }
 
-/** Raw 16 kHz mono PCM of any recording, via the bundled ffmpeg. */
+const MAX_SECONDS = 600; // no mantra recording is near 10 minutes
+const MAX_PCM_BYTES = MAX_SECONDS * 16000 * 2 + 4096;
+
+/** Raw 16 kHz mono PCM of any recording, via the bundled ffmpeg. Capped at 10 minutes and 60 s of work. */
 export async function toPcm(audio: Buffer): Promise<Buffer> {
   const { spawn } = await import('child_process');
   const ffmpegPath = (await import('ffmpeg-static')).default as unknown as string;
   return new Promise((resolve, reject) => {
-    const p = spawn(ffmpegPath, ['-v', 'error', '-i', 'pipe:0', '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1']);
+    const p = spawn(ffmpegPath, ['-v', 'error', '-i', 'pipe:0', '-t', String(MAX_SECONDS), '-ac', '1', '-ar', '16000', '-f', 's16le', 'pipe:1']);
     const out: Buffer[] = [];
-    p.stdout.on('data', (d) => out.push(d));
-    p.on('error', reject);
-    p.on('close', (code) => (code === 0 ? resolve(Buffer.concat(out)) : reject(new Error(`ffmpeg exited ${code}`))));
+    let bytes = 0;
+    const timer = setTimeout(() => p.kill('SIGKILL'), 60_000);
+    p.stdout.on('data', (d: Buffer) => {
+      bytes += d.length;
+      if (bytes > MAX_PCM_BYTES) p.kill('SIGKILL');
+      else out.push(d);
+    });
+    p.on('error', (e) => (clearTimeout(timer), reject(e)));
+    p.on('close', (code) => {
+      clearTimeout(timer);
+      if (bytes > MAX_PCM_BYTES) reject(new Error('recording too long'));
+      else if (code === 0) resolve(Buffer.concat(out));
+      else reject(new Error(`ffmpeg exited ${code}`));
+    });
     p.stdin.on('error', () => {});
     p.stdin.end(audio);
   });

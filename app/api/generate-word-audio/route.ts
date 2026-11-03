@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { requireAdmin } from '@/lib/admin-guard';
 import OpenAI from 'openai';
 import { splitWords } from '@/lib/pronunciation/phonetic';
 import { toPcm } from '@/lib/pronunciation/reference';
@@ -17,9 +18,14 @@ interface WordTimestamp {
   end: number;
 }
 
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
+
 export async function POST(request: NextRequest) {
+  // Rewrites a mantra's word clips and spends a Whisper call: admins only.
+  const g = await requireAdmin();
+  if (g.error) return g.error;
   try {
-    const { mantra_id } = await request.json();
+    const { mantra_id, force } = await request.json();
 
     if (!mantra_id) {
       return NextResponse.json({ error: 'mantra_id is required' }, { status: 400 });
@@ -53,7 +59,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to download reference audio' }, { status: 500 });
     }
 
+    if (Number(audioResponse.headers.get('content-length') || 0) > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: 'Reference audio is too large.' }, { status: 413 });
+    }
     const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+    if (audioBuffer.length > MAX_AUDIO_BYTES) {
+      return NextResponse.json({ error: 'Reference audio is too large.' }, { status: 413 });
+    }
+
+    // Word times a teacher set by hand are never overwritten without asking.
+    const { count: verified } = await supabase
+      .from('mantra_word_audio')
+      .select('id', { count: 'exact', head: true })
+      .eq('mantra_id', mantra_id)
+      .eq('verified', true);
+    if (verified && !force) {
+      return NextResponse.json({ error: 'A teacher has checked these word times by hand. Re-split anyway?', verified: true }, { status: 409 });
+    }
 
     // Step 2: Send to Whisper with word-level timestamps
     console.log('Getting word timestamps from Whisper...');
