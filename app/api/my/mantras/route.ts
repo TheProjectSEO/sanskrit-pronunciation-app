@@ -65,11 +65,21 @@ export async function POST(request: NextRequest) {
 
   // Creating a recording can call paid transcription, so creations are counted per day
   // in the attempt log (deleting a recording does not give the slot back).
-  const { count: today } = await sb.from('pronunciation_logs').select('id', { count: 'exact', head: true })
+  // Reserve first, then count every reservation up to and including this one, so
+  // parallel requests cannot all pass. Any error fails closed.
+  const tooMany = NextResponse.json({ error: 'You have added enough recordings for today. Please continue tomorrow.' }, { status: 429 });
+  const { data: slot, error: slotError } = await sb.from('pronunciation_logs')
+    .insert({ session_id: `user:${userId}`, mantra_id: 'ugc', request_timestamp: new Date().toISOString(), success: true, metadata: { user_id: userId, kind: 'ugc_create' } })
+    .select('id, created_at').single();
+  if (slotError || !slot) return tooMany;
+  const { count: today, error: countError } = await sb.from('pronunciation_logs').select('id', { count: 'exact', head: true })
     .eq('metadata->>user_id', userId).eq('metadata->>kind', 'ugc_create')
-    .gte('created_at', new Date(Date.now() - 864e5).toISOString());
-  if ((today ?? 0) >= MAX_CREATES_PER_DAY) return NextResponse.json({ error: 'You have added enough recordings for today. Please continue tomorrow.' }, { status: 429 });
-  await sb.from('pronunciation_logs').insert({ session_id: `user:${userId}`, mantra_id: 'ugc', success: true, metadata: { user_id: userId, kind: 'ugc_create' } });
+    .gte('created_at', new Date(Date.now() - 864e5).toISOString())
+    .lte('created_at', slot.created_at);
+  if (countError || (today ?? 0) > MAX_CREATES_PER_DAY) {
+    await sb.from('pronunciation_logs').delete().eq('id', slot.id);
+    return tooMany;
+  }
 
   try {
     // No text given: write down exactly what was recited, then fill the other script.
