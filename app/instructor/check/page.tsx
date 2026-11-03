@@ -24,7 +24,7 @@ export default function CheckPage() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search mantras" className="min-h-11 w-full rounded-xl border border-line-strong pr-3 pl-10 focus:border-brand-pink focus:outline-none" />
         </label>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="min-h-11 rounded-xl border border-line-strong px-3 text-brand-purple">
-          {['all', 'published', 'draft', 'submitted', 'private', 'rejected'].map((s) => <option key={s} value={s}>{s === 'all' ? 'All statuses' : s}</option>)}
+          {['all', 'published', 'draft', 'submitted', 'private', 'rejected', 'ai_draft'].map((s) => <option key={s} value={s}>{s === 'all' ? 'All statuses' : s}</option>)}
         </select>
       </Card>
       {!rows ? <Spinner /> : (

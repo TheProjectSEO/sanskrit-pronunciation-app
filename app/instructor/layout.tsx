@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import {
-  Squares2X2Icon, BookOpenIcon, MicrophoneIcon, CheckBadgeIcon, AdjustmentsHorizontalIcon, InboxArrowDownIcon, SparklesIcon, UserGroupIcon, ArrowLeftIcon, ArrowRightOnRectangleIcon,
+  Squares2X2Icon, BookOpenIcon, MicrophoneIcon, CheckBadgeIcon, AdjustmentsHorizontalIcon, InboxArrowDownIcon, SparklesIcon, UserGroupIcon, ArrowLeftIcon, ArrowRightOnRectangleIcon, CpuChipIcon,
 } from '@heroicons/react/24/outline';
 import { isSuperAdmin, ROLE_LABEL } from '@/lib/roles';
+import { BetaBadge } from '@/components/admin/ui';
 
-const MENU = [
+const MENU: { href: string; label: string; Icon: typeof Squares2X2Icon; exact?: boolean; superOnly?: boolean; beta?: boolean }[] = [
   { href: '/instructor', label: 'Overview', Icon: Squares2X2Icon, exact: true },
   { href: '/instructor/mantras', label: 'Mantras', Icon: BookOpenIcon },
   { href: '/instructor/upload', label: 'Record & publish', Icon: MicrophoneIcon },
+  { href: '/instructor/ai', label: 'AI studio', Icon: CpuChipIcon, beta: true },
   { href: '/instructor/check', label: 'Check', Icon: CheckBadgeIcon },
   { href: '/instructor/pronunciation', label: 'Pronunciation', Icon: AdjustmentsHorizontalIcon },
   { href: '/instructor/submissions', label: 'User submissions', Icon: InboxArrowDownIcon },
@@ -51,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex gap-1 px-3 py-2">
             {menu.map((m) => (
               <Link key={m.href} href={m.href} className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm whitespace-nowrap ${on(m) ? 'bg-card-pink font-medium text-brand-pink' : 'text-brand-purple'}`}>
-                <m.Icon aria-hidden className="h-4 w-4" /> {m.label}
+                <m.Icon aria-hidden className="h-4 w-4" /> {m.label}{m.beta && <BetaBadge />}
               </Link>
             ))}
           </div>
@@ -64,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {menu.map((m) => (
               <li key={m.href}>
                 <Link href={m.href} aria-current={on(m) ? 'page' : undefined} className={`flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-sm ${on(m) ? 'bg-white font-semibold text-brand-pink shadow-sm' : 'text-brand-purple hover:bg-white/70'}`}>
-                  <m.Icon aria-hidden className="h-5 w-5" /> {m.label}
+                  <m.Icon aria-hidden className="h-5 w-5" /> {m.label}{m.beta && <BetaBadge />}
                 </Link>
               </li>
             ))}

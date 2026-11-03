@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Mantra not found' }, { status: 404 });
     }
 
+    // AI drafts (Beta) are never shown to learners: text and voice must come from the teacher first.
+    if (mantra.status === 'ai_draft') {
+      return NextResponse.json({ error: 'AI drafts cannot be published. Record the teacher, then create the mantra from Record & publish.' }, { status: 400 });
+    }
+
     // Validate mantra has required fields before publishing
     if (!mantra.reference_text_devanagari || !mantra.reference_text_roman) {
       return NextResponse.json({

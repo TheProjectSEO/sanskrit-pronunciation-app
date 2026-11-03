@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { BetaBadge } from '@/components/admin/ui';
 import {
   MicrophoneIcon,
   StopIcon,
@@ -12,6 +13,7 @@ import {
   ExclamationCircleIcon,
   PencilSquareIcon,
   PencilIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 type UploadMode = 'idle' | 'recording' | 'uploading' | 'processing' | 'success' | 'error';
@@ -355,7 +357,7 @@ export default function UploadPage() {
       <div>
         <h1 className="text-3xl font-bold text-brand-purple">Record &amp; publish</h1>
         <p className="mt-1 text-gray-600">
-          Type the mantra text, record audio, or upload an audio file.
+          Type the mantra text, record audio, upload an audio file, or draft it with AI (Beta).
         </p>
       </div>
 
@@ -666,9 +668,9 @@ export default function UploadPage() {
             </div>
           )}
 
-          {/* Three Options: Type / Record / Upload */}
+          {/* Options: Type / Record / Upload / Generate with AI (Beta) */}
           {!audioUrl && !showTextInput && (
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {/* Type Option */}
               <div className="text-center p-8 border-2 border-dashed border-line-strong rounded-xl hover:border-brand-pink bg-card-pink-light/50 transition-colors">
                 <div className="w-16 h-16 mx-auto bg-card-pink rounded-full flex items-center justify-center mb-4">
@@ -751,6 +753,22 @@ export default function UploadPage() {
                   <ArrowUpTrayIcon className="w-5 h-5" />
                   Choose File
                 </label>
+              </div>
+
+              {/* Generate with AI (Beta) */}
+              <div className="relative text-center p-8 border-2 border-dashed border-brand-purple/30 rounded-xl bg-card-blue/40 hover:border-brand-purple transition-colors">
+                <span className="absolute top-3 right-3"><BetaBadge /></span>
+                <div className="w-16 h-16 mx-auto bg-card-blue rounded-full flex items-center justify-center mb-4">
+                  <SparklesIcon className="w-8 h-8 text-brand-purple" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Generate with AI</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Draft mantras, verses, meanings and an AI voice. Admins only, never shown to users.
+                </p>
+                <Link href="/instructor/ai" className="inline-flex items-center gap-2 px-6 py-3 bg-brand-purple text-white font-semibold rounded-lg hover:bg-brand-purple-hover transition-colors">
+                  <SparklesIcon className="w-5 h-5" />
+                  Open AI studio
+                </Link>
               </div>
             </div>
           )}
