@@ -9,6 +9,8 @@ interface Props {
   result: AttemptResult;
   copy: PracticeCopy;
   langAttr: string;
+  /** Words are judged but the guru's sentence is still being written. */
+  guruPending?: boolean;
   onHearGuru: () => void;
   guruSpeaking: boolean;
   onHearTeacher: () => void;
@@ -21,7 +23,7 @@ interface Props {
  * The guru speaks first. The band is words, not a number. One correction arrives
  * as an errata slip; everything else stays marked on the folio above.
  */
-export function ResultPanel({ result, copy, langAttr, onHearGuru, guruSpeaking, onHearTeacher, onHearYourself, onHearFocusWord, onPracticeFocusWord }: Props) {
+export function ResultPanel({ result, copy, langAttr, guruPending = false, onHearGuru, guruSpeaking, onHearTeacher, onHearYourself, onHearFocusWord, onPracticeFocusWord }: Props) {
   const reduce = useReducedMotion();
   const ok = result.status === 'ok';
 
@@ -34,18 +36,25 @@ export function ResultPanel({ result, copy, langAttr, onHearGuru, guruSpeaking, 
         </p>
       )}
 
-      <div className="flex items-start gap-3">
-        <p className="flex-1 text-[1.2rem] leading-relaxed text-text-primary" lang={langAttr}>{result.guru_line}</p>
-        <button
-          type="button"
-          onClick={onHearGuru}
-          aria-label={copy.hearGuru}
-          aria-pressed={guruSpeaking}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line-strong bg-card-purple-light text-brand-purple hover:bg-line-strong/40"
-        >
-          <SpeakerWaveIcon aria-hidden className={`h-6 w-6 ${guruSpeaking ? 'animate-pulse' : ''}`} />
-        </button>
-      </div>
+      {guruPending ? (
+        <p className="flex items-center gap-3 text-[1.1rem] text-text-secondary" lang={langAttr} role="status">
+          <span aria-hidden className="font-mantra animate-pulse text-2xl text-brand-pink">ॐ</span>
+          {copy.progress.writing}
+        </p>
+      ) : (
+        <div className="flex items-start gap-3">
+          <p className="flex-1 text-[1.2rem] leading-relaxed text-text-primary" lang={langAttr}>{result.guru_line}</p>
+          <button
+            type="button"
+            onClick={onHearGuru}
+            aria-label={copy.hearGuru}
+            aria-pressed={guruSpeaking}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line-strong bg-card-purple-light text-brand-purple hover:bg-line-strong/40"
+          >
+            <SpeakerWaveIcon aria-hidden className={`h-6 w-6 ${guruSpeaking ? 'animate-pulse' : ''}`} />
+          </button>
+        </div>
+      )}
 
       {ok && result.focus && (
         <motion.div

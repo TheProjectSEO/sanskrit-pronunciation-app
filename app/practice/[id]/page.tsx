@@ -15,6 +15,7 @@ import type { AttemptResult } from '@/lib/pronunciation/types';
 import { Folio } from '@/components/practice/Folio';
 import { StepRail } from '@/components/practice/StepRail';
 import { Segmented } from '@/components/practice/Segmented';
+import { CheckProgress, type CheckStage } from '@/components/practice/CheckProgress';
 import { ResultPanel } from '@/components/practice/ResultPanel';
 import { WordDrill } from '@/components/practice/WordDrill';
 import { EarsPanel } from '@/components/practice/EarsPanel';
@@ -79,6 +80,8 @@ export default function PracticePage() {
   const [inlineError, setInlineError] = useState<InlineError | null>(null);
   const [take, setTake] = useState<Take | null>(null);
   const [guruSpeaking, setGuruSpeaking] = useState(false);
+  const [checkStage, setCheckStage] = useState<CheckStage>('sending');
+  const [guruPending, setGuruPending] = useState(false);
   const [drill, setDrill] = useState<{ roman: string; devanagari: string; index: number } | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
 
@@ -229,14 +232,48 @@ export default function PracticePage() {
       fd.append('mantra_id', mantra.id);
       if (verse) fd.append('verse_id', verse.id);
       fd.append('feedback_language', lang);
+      setCheckStage('sending');
+      setGuruPending(false);
       const res = await fetch('/api/analyze-pronunciation', { method: 'POST', body: fd });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || copy.errors.network);
-      setResult(data as AttemptResult);
+      // Refusals (sign-in, daily limit, too long) come back as plain JSON with an error status.
+      if (!res.ok || !res.body || !(res.headers.get('content-type') || '').includes('ndjson')) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || copy.errors.network);
+      }
+      // Otherwise the server reports each step as one JSON line.
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let final: AttemptResult | null = null;
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (value) buf += dec.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const msg = JSON.parse(line) as { type: string; stage?: CheckStage; result?: AttemptResult; error?: string };
+          if (msg.type === 'stage' && msg.stage) setCheckStage(msg.stage);
+          else if (msg.type === 'scored' && msg.result) {
+            // Words are judged: show them now, the guru's sentence follows.
+            setResult(msg.result);
+            setGuruPending(true);
+            setPhase('result');
+          } else if (msg.type === 'done' && msg.result) final = msg.result;
+          else if (msg.type === 'error') throw new Error(msg.error || copy.errors.network);
+        }
+        if (done) break;
+      }
+      if (!final) throw new Error(copy.errors.network);
+      setResult(final);
+      setGuruPending(false);
       setPhase('result');
-      if (data.status === 'ok') loadProgress();
-      if (data.guru_line) speakGuru(data.guru_line);
+      if (final.status === 'ok') loadProgress();
+      if (final.guru_line) speakGuru(final.guru_line);
     } catch (e) {
+      setGuruPending(false);
+      setResult(null);
       setPhase('repeat');
       setInlineError({ message: e instanceof Error ? e.message : copy.errors.network, retry: () => analyze(t) });
     }
@@ -356,7 +393,9 @@ export default function PracticePage() {
         <StepRail steps={copy.steps} current={step} />
 
         <section className="flex flex-col gap-4" lang={langAttr}>
-          {phase !== 'result' && (
+          {phase === 'analyzing' && <CheckProgress stage={checkStage} copy={copy} langAttr={langAttr} />}
+
+          {(phase === 'listen' || phase === 'repeat') && (
             <>
               <h2 className="text-center text-[1.15rem] font-semibold text-text-primary">{phase === 'listen' ? copy.listenTitle : copy.repeatTitle}</h2>
               <div className="h-1.5 overflow-hidden rounded-full bg-card-purple" aria-hidden>
@@ -380,6 +419,7 @@ export default function PracticePage() {
               result={result}
               copy={copy}
               langAttr={langAttr}
+              guruPending={guruPending}
               guruSpeaking={guruSpeaking}
               onHearGuru={() => (guruSpeaking ? (stopTTS(), setGuruSpeaking(false)) : speakGuru(result.guru_line))}
               onHearTeacher={() => { stopAll(); playTeacher(); }}
@@ -391,7 +431,7 @@ export default function PracticePage() {
 
           {phase === 'result' && result?.debug && isAdmin(session?.user?.role) && <EarsPanel debug={result.debug} />}
 
-          {phase === 'result' && result?.log_id && result.status !== 'say_again' && (
+          {phase === 'result' && !guruPending && result?.log_id && result.status !== 'say_again' && (
             <VerdictAsk key={result.log_id} logId={result.log_id} wav={take?.wav ?? null} copy={copy} langAttr={langAttr} />
           )}
 

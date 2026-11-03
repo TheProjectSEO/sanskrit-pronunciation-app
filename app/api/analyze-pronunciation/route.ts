@@ -8,6 +8,7 @@ import { canPractise } from '@/lib/mantra-access';
 import { isAdmin } from '@/lib/roles';
 import { legacyAnalyze } from '@/lib/pronunciation/legacy';
 import { finishAttempt, reserveAttempt } from '@/lib/pronunciation/log';
+import type { AttemptResult } from '@/lib/pronunciation/types';
 
 export const maxDuration = 60;
 
@@ -71,26 +72,48 @@ export async function POST(request: NextRequest) {
   }
 
   const startedAt = Date.now();
-  try {
-    const wav = Buffer.from(await audio.arrayBuffer());
-    const [teacher, teacherJ] = await Promise.all([
-      teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
-        console.error('teacher literal failed', e);
-        return null;
-      }),
-      teacherJudge({ mantraId, audioUrl: mantra.reference_audio_url, verse, words: splitWords(roman), devanagari }).catch((e) => {
-        console.error('teacher judge failed', e);
-        return null;
-      }),
-    ]);
-    const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, teacherLiteral: teacher, teacherJudge: teacherJ, feedbackLanguage });
+  const wav = Buffer.from(await audio.arrayBuffer());
+  const admin = isAdmin(session?.user?.role);
+  const strip = (r: AttemptResult) => {
+    const { debug, ...pub } = r;
+    return { ...pub, log_id: attemptId, ...(admin ? { debug } : {}) };
+  };
 
-    await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
-    const { debug, ...publicResult } = result;
-    return NextResponse.json({ ...publicResult, log_id: attemptId, ...(isAdmin(session?.user?.role) ? { debug } : {}) });
-  } catch (e) {
-    console.error('analyze v2 failed', e);
-    await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
-    return NextResponse.json({ error: 'We could not listen to that recording. Please try once more.' }, { status: 502 });
-  }
+  // NDJSON, one message per line, so the learner sees real progress:
+  //   {stage:'listening'} -> {type:'scored', result} (words judged) -> {type:'done', result} (with the guru's line)
+  // Errors after this point arrive in-band as {type:'error'}, because the 200 status is already sent.
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (msg: unknown) => controller.enqueue(enc.encode(JSON.stringify(msg) + '\n'));
+      send({ type: 'stage', stage: 'listening' });
+      try {
+        const result = await analyzeAttempt({
+          wav,
+          romanText: roman,
+          devanagariText: devanagari,
+          // Passed as promises: the teacher cache loads while the ears are already listening.
+          teacherLiteral: teacherLiteral({ mantraId, audioUrl: mantra.reference_audio_url, verse }).catch((e) => {
+            console.error('teacher literal failed', e);
+            return null;
+          }),
+          teacherJudge: teacherJudge({ mantraId, audioUrl: mantra.reference_audio_url, verse, words: splitWords(roman), devanagari }).catch((e) => {
+            console.error('teacher judge failed', e);
+            return null;
+          }),
+          feedbackLanguage,
+          onScored: (partial) => send({ type: 'scored', result: strip(partial) }),
+        });
+        await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
+        send({ type: 'done', result: strip(result) });
+      } catch (e) {
+        console.error('analyze v2 failed', e);
+        await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });
+        send({ type: 'error', error: 'We could not listen to that recording. Please try once more.' });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

@@ -92,7 +92,8 @@ export async function guruFeedback(opts: {
 
   const res = await openai().chat.completions.create({
     model: MODELS.guru,
-    reasoning_effort: 'low',
+    // 'none' measured ~1.3 s faster than 'low' with equally specific lines (3 Nov 2026).
+    reasoning_effort: 'none',
     response_format: { type: 'json_object' },
     messages: [
       {

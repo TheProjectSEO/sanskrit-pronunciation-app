@@ -16,6 +16,8 @@ export interface PracticeCopy {
   stopChant: string;
   recordingHint: string;
   listening: string;
+  /** Steps shown while an attempt is checked; each one is reported by the server. */
+  progress: { sending: string; listening: string; writing: string; usually: string };
   bands: { close: string; getting_there: string; needs_practice: string };
   bandNote: string;
   heard: string;
@@ -68,6 +70,7 @@ const hi: PracticeCopy = {
   stopChant: 'पूरा हुआ',
   recordingHint: 'सुन रहे हैं… मंत्र पूरा होने पर “पूरा हुआ” दबाएँ',
   listening: 'गुरुजी ध्यान से सुन रहे हैं…',
+  progress: { sending: 'आपकी रिकॉर्डिंग भेजी जा रही है', listening: 'हर शब्द सुनकर गुरुजी की आवाज़ से मिलाया जा रहा है', writing: 'गुरुजी सलाह लिख रहे हैं…', usually: 'आमतौर पर लगभग 8 सेकंड लगते हैं' },
   bands: { close: 'बहुत सुंदर, लगभग गुरुजी जैसा', getting_there: 'अच्छा, थोड़ा और अभ्यास', needs_practice: 'धीरे-धीरे फिर से अभ्यास करें' },
   bandNote: 'यह आकलन आपकी रिकॉर्डिंग में जो सुना गया उस पर आधारित है।',
   heard: 'सुनाई दिया',
@@ -120,6 +123,7 @@ const en: PracticeCopy = {
   stopChant: 'Done',
   recordingHint: 'Listening… tap Done when you finish the mantra',
   listening: 'The guru is listening closely…',
+  progress: { sending: 'Sending your recording', listening: 'Listening to each word and comparing with the teacher', writing: 'The guru is writing advice…', usually: 'Usually takes about 8 seconds' },
   bands: { close: 'Beautiful, very close to the teacher', getting_there: 'Good, a little more practice', needs_practice: 'Slowly, practise it again' },
   bandNote: 'Based on what we could hear in your recording.',
   heard: 'Sounded like',
@@ -173,6 +177,7 @@ const ta: PracticeCopy = {
   stopChant: 'முடிந்தது',
   recordingHint: 'கேட்கிறோம்… முடிந்ததும் “முடிந்தது” அழுத்துங்கள்',
   listening: 'குரு கவனமாகக் கேட்கிறார்…',
+  progress: { sending: 'உங்கள் பதிவு அனுப்பப்படுகிறது', listening: 'ஒவ்வொரு சொல்லையும் கேட்டு குருவின் குரலுடன் ஒப்பிடப்படுகிறது', writing: 'குரு ஆலோசனை எழுதுகிறார்…', usually: 'பொதுவாக சுமார் 8 வினாடிகள் ஆகும்' },
   bands: { close: 'அருமை, குருவைப் போலவே', getting_there: 'நன்று, இன்னும் சிறிது பயிற்சி', needs_practice: 'மெதுவாக மீண்டும் பயிற்சி செய்யுங்கள்' },
   bandNote: 'உங்கள் பதிவில் கேட்டதை வைத்து மதிப்பிடப்பட்டது.',
   heard: 'கேட்டது',
@@ -226,6 +231,7 @@ const kn: PracticeCopy = {
   stopChant: 'ಮುಗಿಯಿತು',
   recordingHint: 'ಕೇಳುತ್ತಿದ್ದೇವೆ… ಮುಗಿದ ನಂತರ “ಮುಗಿಯಿತು” ಒತ್ತಿ',
   listening: 'ಗುರುಗಳು ಗಮನವಿಟ್ಟು ಕೇಳುತ್ತಿದ್ದಾರೆ…',
+  progress: { sending: 'ನಿಮ್ಮ ರೆಕಾರ್ಡಿಂಗ್ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ', listening: 'ಪ್ರತಿ ಪದವನ್ನು ಕೇಳಿ ಗುರುಗಳ ಧ್ವನಿಯೊಂದಿಗೆ ಹೋಲಿಸಲಾಗುತ್ತಿದೆ', writing: 'ಗುರುಗಳು ಸಲಹೆ ಬರೆಯುತ್ತಿದ್ದಾರೆ…', usually: 'ಸಾಮಾನ್ಯವಾಗಿ ಸುಮಾರು 8 ಸೆಕೆಂಡುಗಳು ಬೇಕಾಗುತ್ತದೆ' },
   bands: { close: 'ಅದ್ಭುತ, ಗುರುಗಳಂತೆಯೇ', getting_there: 'ಚೆನ್ನಾಗಿದೆ, ಇನ್ನಷ್ಟು ಅಭ್ಯಾಸ', needs_practice: 'ನಿಧಾನವಾಗಿ ಮತ್ತೆ ಅಭ್ಯಾಸ ಮಾಡಿ' },
   bandNote: 'ನಿಮ್ಮ ರೆಕಾರ್ಡಿಂಗ್‌ನಲ್ಲಿ ಕೇಳಿಸಿದ್ದನ್ನು ಆಧರಿಸಿದೆ.',
   heard: 'ಕೇಳಿಸಿದ್ದು',
@@ -279,6 +285,7 @@ const te: PracticeCopy = {
   stopChant: 'అయిపోయింది',
   recordingHint: 'వింటున్నాం… పూర్తయ్యాక “అయిపోయింది” నొక్కండి',
   listening: 'గురువుగారు శ్రద్ధగా వింటున్నారు…',
+  progress: { sending: 'మీ రికార్డింగ్ పంపబడుతోంది', listening: 'ప్రతి పదాన్ని విని గురువుగారి స్వరంతో పోలుస్తున్నాం', writing: 'గురువుగారు సలహా రాస్తున్నారు…', usually: 'సాధారణంగా సుమారు 8 సెకన్లు పడుతుంది' },
   bands: { close: 'అద్భుతం, గురువుగారిలాగే', getting_there: 'బాగుంది, ఇంకొంచెం సాధన', needs_practice: 'నెమ్మదిగా మళ్ళీ సాధన చేయండి' },
   bandNote: 'మీ రికార్డింగ్‌లో వినబడిన దాని ఆధారంగా.',
   heard: 'వినబడింది',
