@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AttemptResult } from './types';
+import { takeSlot } from '../limits';
 
 // pronunciation_logs predates user accounts: it has no user_id column, so the
 // owner lives in metadata.user_id and is filtered with metadata->>user_id.
@@ -28,14 +29,15 @@ const VALIDATION: Record<AttemptResult['status'], string> = {
 };
 
 /**
- * Claims one of today's attempts before any model is called, so parallel requests
- * cannot all pass the cap check. Returns the row id, or null when the cap is reached
- * (or the slot could not be claimed).
+ * Claims one of today's attempts before any model is called and opens its log row.
+ * Returns the row id, or null when the cap is reached or the slot could not be claimed.
  */
 export async function reserveAttempt(
   supabase: SupabaseClient,
   a: { userId: string; mantraId: string | null; kind: 'mantra' | 'word'; cap: number },
 ): Promise<string | null> {
+  // The daily cap is taken atomically in the database before any model is called.
+  if (!(await takeSlot(supabase, a.userId, 'attempt', a.cap))) return null;
   const { data, error } = await supabase
     .from('pronunciation_logs')
     .insert({
@@ -49,18 +51,6 @@ export async function reserveAttempt(
     .single();
   if (error || !data) {
     console.error('attempt reserve failed', error?.message);
-    return null;
-  }
-  // Count today's rows up to and including this one: every in-flight request is
-  // seen, and when several arrive together the earliest ones keep their slot.
-  const { count, error: countError } = await supabase
-    .from('pronunciation_logs')
-    .select('id', { count: 'exact', head: true })
-    .eq(OWNER, a.userId)
-    .gte('created_at', new Date(Date.now() - 864e5).toISOString())
-    .lte('created_at', data.created_at);
-  if (countError || (count ?? 0) > a.cap) {
-    await supabase.from('pronunciation_logs').delete().eq('id', data.id);
     return null;
   }
   return data.id as string;
