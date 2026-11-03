@@ -54,4 +54,14 @@ export interface AttemptResult {
   practice_suggestions: string[];
   /** Row in pronunciation_logs, so the learner can say whether the verdict was right. */
   log_id?: string | null;
+  /** What each ear heard; returned to admins only (Check screen). */
+  debug?: AttemptDebug;
+}
+
+export interface AttemptDebug {
+  literal: string;
+  teacher_literal: string | null;
+  judge: { expected: string; heard: string; status: string; issue: string; confidence: number }[];
+  teacher_habits: { expected: string; heard: string }[];
+  confidence: number;
 }

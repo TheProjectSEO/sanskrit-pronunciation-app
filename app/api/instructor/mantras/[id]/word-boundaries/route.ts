@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { z } from 'zod';
@@ -25,8 +26,8 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     const supabase = getServiceSupabase();
@@ -40,10 +41,6 @@ export async function POST(
 
     if (mantraError || !mantra) {
       return NextResponse.json({ error: 'Mantra not found' }, { status: 404 });
-    }
-
-    if (mantra.created_by !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden: You can only modify your own mantras' }, { status: 403 });
     }
 
     // Validate body

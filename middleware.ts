@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { isAdmin } from '@/lib/roles';
 import { NextResponse } from 'next/server';
 
 /**
@@ -43,7 +44,7 @@ export default auth((req) => {
   );
   if (isInstructorRoute) {
     const userRole = req.auth?.user?.role;
-    if (userRole !== 'instructor') {
+    if (!isAdmin(userRole)) {
       return NextResponse.redirect(new URL('/', nextUrl.origin));
     }
   }

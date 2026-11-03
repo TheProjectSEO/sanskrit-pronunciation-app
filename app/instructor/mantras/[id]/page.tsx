@@ -517,7 +517,7 @@ export default function MantraDetailPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-pink"></div>
       </div>
     );
   }
@@ -529,7 +529,7 @@ export default function MantraDetailPage() {
           <p className="text-red-600 mb-4">{error}</p>
           <Link
             href="/instructor/mantras"
-            className="text-orange-600 hover:text-orange-700 font-medium"
+            className="text-brand-pink hover:text-brand-pink-hover font-medium"
           >
             Back to Mantras
           </Link>
@@ -545,7 +545,7 @@ export default function MantraDetailPage() {
           <p className="text-gray-600 mb-4">Mantra not found</p>
           <Link
             href="/instructor/mantras"
-            className="text-orange-600 hover:text-orange-700 font-medium"
+            className="text-brand-pink hover:text-brand-pink-hover font-medium"
           >
             Back to Mantras
           </Link>
@@ -573,17 +573,17 @@ export default function MantraDetailPage() {
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="text-2xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="text-2xl font-bold text-brand-purple border border-gray-300 rounded-lg px-3 py-1 w-full focus:outline-none focus:ring-2 focus:ring-brand-pink"
             />
           ) : (
-            <h1 className="text-2xl font-bold text-gray-900">{mantra.name}</h1>
+            <h1 className="text-2xl font-bold text-brand-purple">{mantra.name}</h1>
           )}
         </div>
         <div className="flex items-center gap-3">
           {!editing && (
             <button
               onClick={startEditing}
-              className="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 font-medium text-sm"
+              className="px-4 py-2 bg-card-pink text-brand-pink rounded-lg hover:bg-card-pink font-medium text-sm"
             >
               Edit
             </button>
@@ -666,10 +666,10 @@ export default function MantraDetailPage() {
                 value={editDevanagari}
                 onChange={(e) => setEditDevanagari(e.target.value)}
                 rows={3}
-                className="w-full p-4 bg-orange-50 border border-orange-200 rounded-lg text-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+                className="w-full p-4 bg-card-pink-light border border-line-strong rounded-lg text-xl font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-pink resize-vertical"
               />
             ) : (
-              <div className="p-4 bg-orange-50 rounded-lg text-xl font-medium text-gray-900">
+              <div className="p-4 bg-card-pink-light rounded-lg text-xl font-medium text-gray-900">
                 {mantra.reference_text_devanagari || mantra.text_devanagari || (
                   <span className="text-gray-400 italic">Not transcribed yet</span>
                 )}
@@ -687,7 +687,7 @@ export default function MantraDetailPage() {
                   value={editRoman}
                   onChange={(e) => setEditRoman(e.target.value)}
                   rows={3}
-                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+                  className="w-full p-4 bg-gray-50 border border-gray-200 rounded-lg text-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-pink resize-vertical"
                 />
                 <button
                   onClick={suggestDevanagari}
@@ -728,7 +728,7 @@ export default function MantraDetailPage() {
             <select
               value={editDeityId || ''}
               onChange={(e) => setEditDeityId(e.target.value || null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink bg-white"
             >
               <option value="">No deity assigned</option>
               {deities.map((deity) => (
@@ -756,7 +756,7 @@ export default function MantraDetailPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium"
+              className="px-6 py-2 bg-brand-pink-hover text-white rounded-lg hover:bg-brand-pink-hover disabled:opacity-50 font-medium"
             >
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
@@ -893,7 +893,7 @@ export default function MantraDetailPage() {
                         <span className="text-sm font-medium text-gray-700">{verse.title}</span>
                       )}
                     </div>
-                    <p className="text-orange-600 text-sm truncate">{verse.text_devanagari}</p>
+                    <p className="text-brand-pink text-sm truncate">{verse.text_devanagari}</p>
                     <p className="text-gray-500 text-xs truncate italic">{verse.text_roman}</p>
                     {(verse.audio_start_time != null || verse.audio_end_time != null) && (
                       <p className="text-gray-400 text-xs mt-1">
@@ -1023,7 +1023,7 @@ export default function MantraDetailPage() {
             <button
               onClick={handleReprocess}
               disabled={reprocessing}
-              className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium"
+              className="px-6 py-2 bg-brand-pink-hover text-white rounded-lg hover:bg-brand-pink-hover disabled:opacity-50 font-medium"
             >
               {reprocessing ? 'Processing...' : 'Reprocess Audio'}
             </button>

@@ -72,5 +72,12 @@ export async function analyzeAttempt(input: AnalyzeInput): Promise<AttemptResult
     })),
     detailed_errors: [],
     practice_suggestions: focus?.tip ? [focus.tip] : [],
+    debug: {
+      literal: literal.text,
+      teacher_literal: input.teacherLiteral,
+      judge: judge.words.map((w) => ({ expected: w.expected, heard: w.heard, status: w.status, issue: w.issue, confidence: w.confidence })),
+      teacher_habits: (input.teacherJudge?.words ?? []).filter((w) => w.status !== 'ok').map((w) => ({ expected: w.expected, heard: w.heard })),
+      confidence: r.confidence,
+    },
   };
 }

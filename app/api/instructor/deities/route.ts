@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { z } from 'zod';
@@ -15,7 +16,7 @@ export async function GET() {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -24,7 +25,6 @@ export async function GET() {
     const { data: deities, error } = await supabase
       .from('deities')
       .select('id, name, name_devanagari, description, image_url, created_at')
-      .eq('created_by', session.user.id)
       .order('name', { ascending: true });
 
     if (error) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

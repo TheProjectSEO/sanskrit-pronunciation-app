@@ -116,7 +116,7 @@ export default function DeitiesPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-pink"></div>
       </div>
     );
   }
@@ -125,10 +125,10 @@ export default function DeitiesPage() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Deities</h1>
+        <h1 className="text-2xl font-bold text-brand-purple">Deities</h1>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium text-sm"
+          className="px-4 py-2 bg-brand-pink-hover text-white rounded-lg hover:bg-brand-pink-hover font-medium text-sm"
         >
           {showForm ? 'Cancel' : '+ Add Deity'}
         </button>
@@ -153,13 +153,13 @@ export default function DeitiesPage() {
               value={formName}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g. Ganesh"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink"
               required
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name (Devanagari) {transliterating && <span className="text-orange-500 text-xs ml-1">generating...</span>}
+              Name (Devanagari) {transliterating && <span className="text-brand-pink text-xs ml-1">generating...</span>}
             </label>
             <div className="relative">
               <input
@@ -167,11 +167,11 @@ export default function DeitiesPage() {
                 value={formDevanagari}
                 onChange={(e) => setFormDevanagari(e.target.value)}
                 placeholder="Auto-generated from English name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink"
               />
               {transliterating && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin h-4 w-4 border-2 border-brand-pink border-t-transparent rounded-full"></div>
                 </div>
               )}
             </div>
@@ -185,13 +185,13 @@ export default function DeitiesPage() {
               onChange={(e) => setFormDescription(e.target.value)}
               placeholder="Optional description..."
               rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink resize-vertical"
             />
           </div>
           <button
             type="submit"
             disabled={creating || !formName.trim()}
-            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium"
+            className="px-6 py-2 bg-brand-pink-hover text-white rounded-lg hover:bg-brand-pink-hover disabled:opacity-50 font-medium"
           >
             {creating ? 'Creating...' : 'Create Deity'}
           </button>
@@ -214,13 +214,13 @@ export default function DeitiesPage() {
               className="bg-white border border-gray-200 rounded-lg p-5"
             >
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-card-pink rounded-lg flex items-center justify-center flex-shrink-0">
                   <span className="text-xl">🙏</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900">{deity.name}</h3>
                   {deity.name_devanagari && (
-                    <p className="text-orange-600 text-sm">{deity.name_devanagari}</p>
+                    <p className="text-brand-pink text-sm">{deity.name_devanagari}</p>
                   )}
                   {deity.description && (
                     <p className="text-gray-500 text-sm mt-1 line-clamp-2">{deity.description}</p>

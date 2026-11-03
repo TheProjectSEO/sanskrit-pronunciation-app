@@ -345,7 +345,7 @@ export default function UploadPage() {
       {/* Back Link */}
       <Link
         href="/instructor/mantras"
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors"
+        className="inline-flex items-center gap-2 text-gray-600 hover:text-brand-pink-hover transition-colors"
       >
         <ArrowLeftIcon className="w-4 h-4" />
         Back to All Mantras
@@ -353,7 +353,7 @@ export default function UploadPage() {
 
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Upload New Mantra</h1>
+        <h1 className="text-3xl font-bold text-brand-purple">Record &amp; publish</h1>
         <p className="mt-1 text-gray-600">
           Type the mantra text, record audio, or upload an audio file.
         </p>
@@ -362,7 +362,7 @@ export default function UploadPage() {
       {/* Processing State */}
       {mode === 'processing' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8 text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-brand-pink mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Processing Audio</h2>
           <p className="text-gray-600 mb-4">
             Please wait while we transcribe your mantra...
@@ -395,7 +395,7 @@ export default function UploadPage() {
                   {editingField !== 'name' && (
                     <button
                       onClick={() => setEditingField('name')}
-                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+                      className="inline-flex items-center gap-1 text-xs text-brand-pink hover:text-brand-pink-hover"
                     >
                       <PencilIcon className="w-3 h-3" /> Edit
                     </button>
@@ -407,12 +407,12 @@ export default function UploadPage() {
                       type="text"
                       value={editName}
                       onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg"
+                      className="flex-1 px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink text-lg"
                       autoFocus
                     />
                     <button
                       onClick={() => setEditingField(null)}
-                      className="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      className="px-3 py-2 text-sm bg-brand-pink text-white rounded-lg hover:bg-brand-pink-hover"
                     >
                       Done
                     </button>
@@ -431,7 +431,7 @@ export default function UploadPage() {
                   {editingField !== 'roman' && (
                     <button
                       onClick={() => setEditingField('roman')}
-                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+                      className="inline-flex items-center gap-1 text-xs text-brand-pink hover:text-brand-pink-hover"
                     >
                       <PencilIcon className="w-3 h-3" /> Edit
                     </button>
@@ -443,12 +443,12 @@ export default function UploadPage() {
                       value={editRoman}
                       onChange={(e) => setEditRoman(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg resize-vertical"
+                      className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink text-lg resize-vertical"
                       autoFocus
                     />
                     <button
                       onClick={() => setEditingField(null)}
-                      className="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      className="px-3 py-2 text-sm bg-brand-pink text-white rounded-lg hover:bg-brand-pink-hover"
                     >
                       Done
                     </button>
@@ -467,7 +467,7 @@ export default function UploadPage() {
                   {editingField !== 'devanagari' && (
                     <button
                       onClick={() => setEditingField('devanagari')}
-                      className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+                      className="inline-flex items-center gap-1 text-xs text-brand-pink hover:text-brand-pink-hover"
                     >
                       <PencilIcon className="w-3 h-3" /> Edit
                     </button>
@@ -479,12 +479,12 @@ export default function UploadPage() {
                       value={editDevanagari}
                       onChange={(e) => setEditDevanagari(e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-lg resize-vertical"
+                      className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink text-lg resize-vertical"
                       autoFocus
                     />
                     <button
                       onClick={() => setEditingField(null)}
-                      className="px-3 py-2 text-sm bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      className="px-3 py-2 text-sm bg-brand-pink text-white rounded-lg hover:bg-brand-pink-hover"
                     >
                       Done
                     </button>
@@ -504,7 +504,7 @@ export default function UploadPage() {
                 <select
                   value={selectedDeityId}
                   onChange={(e) => setSelectedDeityId(e.target.value)}
-                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white text-lg"
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink bg-white text-lg"
                 >
                   <option value="">— No deity (assign later) —</option>
                   {deities.map((d) => (
@@ -529,7 +529,7 @@ export default function UploadPage() {
             <button
               onClick={saveAndProcess}
               disabled={saving}
-              className="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-60 transition-colors"
+              className="flex-1 px-4 py-3 bg-brand-pink text-white font-semibold rounded-lg hover:bg-brand-pink-hover disabled:opacity-60 transition-colors"
             >
               {saving
                 ? splittingWords
@@ -587,7 +587,7 @@ export default function UploadPage() {
               <div className="mt-4 flex gap-4">
                 <button
                   onClick={processAudio}
-                  className="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                  className="flex-1 px-4 py-3 bg-brand-pink text-white font-semibold rounded-lg hover:bg-brand-pink-hover transition-colors"
                 >
                   Process & Transcribe
                 </button>
@@ -613,7 +613,7 @@ export default function UploadPage() {
                   value={mantraName}
                   onChange={(e) => setMantraName(e.target.value)}
                   placeholder="e.g. Gayatri Mantra, Om Namah Shivaya"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink"
                 />
               </div>
               <div>
@@ -625,13 +625,13 @@ export default function UploadPage() {
                   onChange={(e) => handleRomanChange(e.target.value)}
                   rows={3}
                   placeholder="e.g. Om Namah Shivaya"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink resize-vertical"
                 />
                 <p className="text-xs text-gray-400 mt-1">AI will recognize the mantra and provide the correct text</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Devanagari {transliterating && <span className="text-orange-500 text-xs ml-1">AI generating...</span>}
+                  Devanagari {transliterating && <span className="text-brand-pink text-xs ml-1">AI generating...</span>}
                 </label>
                 <div className="relative">
                   <textarea
@@ -639,11 +639,11 @@ export default function UploadPage() {
                     onChange={(e) => setTextDevanagari(e.target.value)}
                     rows={3}
                     placeholder="Auto-generated from English text..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-vertical"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-pink resize-vertical"
                   />
                   {transliterating && (
                     <div className="absolute right-3 top-3">
-                      <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                      <div className="animate-spin h-4 w-4 border-2 border-brand-pink border-t-transparent rounded-full"></div>
                     </div>
                   )}
                 </div>
@@ -652,7 +652,7 @@ export default function UploadPage() {
                 <button
                   onClick={createMantraFromText}
                   disabled={creatingMantra || !textRoman.trim()}
-                  className="flex-1 px-4 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                  className="flex-1 px-4 py-3 bg-brand-pink text-white font-semibold rounded-lg hover:bg-brand-pink-hover disabled:opacity-50 transition-colors"
                 >
                   {creatingMantra ? 'Creating...' : 'Create Mantra'}
                 </button>
@@ -670,9 +670,9 @@ export default function UploadPage() {
           {!audioUrl && !showTextInput && (
             <div className="grid md:grid-cols-3 gap-6">
               {/* Type Option */}
-              <div className="text-center p-8 border-2 border-dashed border-orange-300 rounded-xl hover:border-orange-400 bg-orange-50/50 transition-colors">
-                <div className="w-16 h-16 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-4">
-                  <PencilSquareIcon className="w-8 h-8 text-orange-600" />
+              <div className="text-center p-8 border-2 border-dashed border-line-strong rounded-xl hover:border-brand-pink bg-card-pink-light/50 transition-colors">
+                <div className="w-16 h-16 mx-auto bg-card-pink rounded-full flex items-center justify-center mb-4">
+                  <PencilSquareIcon className="w-8 h-8 text-brand-pink" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Type Mantra</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -680,7 +680,7 @@ export default function UploadPage() {
                 </p>
                 <button
                   onClick={() => setShowTextInput(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-brand-pink text-white font-semibold rounded-lg hover:bg-brand-pink-hover transition-colors"
                 >
                   <PencilSquareIcon className="w-5 h-5" />
                   Type It
@@ -688,7 +688,7 @@ export default function UploadPage() {
               </div>
 
               {/* Record Option */}
-              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-300 transition-colors">
+              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-line-strong transition-colors">
                 <div className="mb-4">
                   {mode === 'recording' ? (
                     <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center animate-pulse">
@@ -728,7 +728,7 @@ export default function UploadPage() {
               </div>
 
               {/* Upload Option */}
-              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-orange-300 transition-colors">
+              <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-line-strong transition-colors">
                 <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
                   <ArrowUpTrayIcon className="w-8 h-8 text-gray-600" />
                 </div>

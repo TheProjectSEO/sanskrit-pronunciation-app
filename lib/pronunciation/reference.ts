@@ -11,6 +11,26 @@ interface TeacherCache {
 }
 
 const BUCKET = 'audio';
+
+/** Storage path of the teacher's cached literal transcript (covers recording, model and prompt). */
+export function teacherLiteralPath(mantraId: string, audioUrl: string) {
+  const tag = createHash('sha1').update(`${audioUrl}|${MODELS.literal}|${LITERAL_PROMPT}`).digest('hex').slice(0, 12);
+  return `ear-cache/${mantraId}-${tag}.json`;
+}
+
+/** Storage path of the judge's cached reading of the teacher for one text (full mantra or a verse). */
+export function teacherJudgePath(opts: { mantraId: string; audioUrl: string; verse?: { start: number | null; end: number | null } | null; words: string[] }) {
+  const key = createHash('sha1')
+    .update(`${opts.audioUrl}|${opts.verse?.start ?? ''}-${opts.verse?.end ?? ''}|${opts.words.join(' ')}|${MODELS.judge}|${JUDGE_VERSION}`)
+    .digest('hex')
+    .slice(0, 16);
+  return `ear-cache/${opts.mantraId}-judge-${key}.json`;
+}
+
+/** Drops in-memory copies so a re-run reads fresh results. */
+export function forgetTeacherCache(paths: string[]) {
+  for (const p of paths) mem.delete(p);
+}
 const mem = new Map<string, TeacherCache>();
 
 /**
@@ -26,8 +46,7 @@ export async function teacherLiteral(opts: {
   if (!opts.audioUrl) return null;
   // The key covers the recording AND how it was transcribed, so a model or prompt change
   // never compares a learner against a teacher transcribed a different way.
-  const tag = createHash('sha1').update(`${opts.audioUrl}|${MODELS.literal}|${LITERAL_PROMPT}`).digest('hex').slice(0, 12);
-  const path = `ear-cache/${opts.mantraId}-${tag}.json`;
+  const path = teacherLiteralPath(opts.mantraId, opts.audioUrl);
   let cache = mem.get(path) ?? null;
   const supabase = getServiceSupabase();
 
@@ -137,11 +156,7 @@ export async function teacherJudge(opts: {
   devanagari: string;
 }): Promise<JudgeResult | null> {
   if (!opts.audioUrl) return null;
-  const key = createHash('sha1')
-    .update(`${opts.audioUrl}|${opts.verse?.start ?? ''}-${opts.verse?.end ?? ''}|${opts.words.join(' ')}|${MODELS.judge}|${JUDGE_VERSION}`)
-    .digest('hex')
-    .slice(0, 16);
-  const path = `ear-cache/${opts.mantraId}-judge-${key}.json`;
+  const path = teacherJudgePath(opts);
   const cached = mem.get(path) as unknown as JudgeResult | undefined;
   if (cached) return cached;
   const supabase = getServiceSupabase();

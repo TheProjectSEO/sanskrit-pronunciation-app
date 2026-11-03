@@ -45,7 +45,8 @@ export async function POST(request: NextRequest) {
       feedbackLanguage: lang,
     });
     await finishAttempt(supabase, attemptId, { userId, kind: 'word', word: roman, result, startedAt, audioBytes: audio.size });
-    return NextResponse.json(result);
+    const { debug: _debug, ...publicResult } = result;
+    return NextResponse.json(publicResult);
   } catch (e) {
     console.error('analyze-word v2 failed', e);
     await finishAttempt(supabase, attemptId, { userId, kind: 'word', word: roman, result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });

@@ -79,24 +79,24 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-paper flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-card-purple-light flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-semibold text-ink mb-2">
+          <h1 className="text-4xl font-bold text-brand-purple mb-2">
             Create Account
           </h1>
-          <p className="text-ink-soft">
+          <p className="text-gray-600">
             Join Tapaswe to perfect your Sanskrit pronunciation
           </p>
         </div>
 
         {/* Signup Form */}
-        <div className="border-y-[3px] border-double border-paper-edge py-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Error Display */}
             {error && (
-              <div className="bg-sindoor-wash border border-sindoor/40 text-sindoor px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                 <p className="font-medium">{error}</p>
                 {passwordErrors.length > 0 && (
                   <ul className="mt-2 ml-4 list-disc text-sm">
@@ -112,7 +112,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="firstName"
-                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 First Name
               </label>
@@ -124,7 +124,7 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, firstName: e.target.value })
                 }
-                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all"
                 placeholder="Enter your first name"
                 disabled={loading}
               />
@@ -134,7 +134,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="lastName"
-                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Last Name
               </label>
@@ -146,7 +146,7 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, lastName: e.target.value })
                 }
-                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all"
                 placeholder="Enter your last name"
                 disabled={loading}
               />
@@ -156,7 +156,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Email Address
               </label>
@@ -168,7 +168,7 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all"
                 placeholder="you@example.com"
                 disabled={loading}
               />
@@ -178,7 +178,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-[0.95rem] font-medium text-ink-soft mb-2"
+                className="block text-sm font-medium text-gray-700 mb-2"
               >
                 Password
               </label>
@@ -190,11 +190,11 @@ export default function SignupPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="w-full min-h-12 px-4 border border-paper-edge bg-paper-deep text-ink text-lg rounded-lg placeholder:text-ink-soft/70 focus:outline-none focus:ring-2 focus:ring-focus transition-all"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-pink focus:border-transparent transition-all"
                 placeholder="Min. 8 characters with uppercase, lowercase, number"
                 disabled={loading}
               />
-              <p className="mt-2 text-sm text-ink-soft">
+              <p className="mt-2 text-xs text-gray-500">
                 Must contain uppercase, lowercase, number, and be at least 8 characters
               </p>
             </div>
@@ -203,7 +203,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full min-h-14 bg-cloth text-cloth-ink text-lg font-semibold px-4 rounded-xl hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-brand-pink to-brand-pink-hover text-white font-semibold py-3 px-4 rounded-lg hover:from-brand-pink hover:to-brand-pink-hover focus:outline-none focus:ring-2 focus:ring-brand-pink focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
@@ -211,17 +211,22 @@ export default function SignupPage() {
 
           {/* Link to Sign In */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-ink-soft">
+            <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <Link
                 href="/signin"
-                className="font-medium text-sindoor underline underline-offset-4 hover:text-cloth transition-colors"
+                className="font-medium text-brand-pink hover:text-brand-pink-hover transition-colors"
               >
                 Sign in here
               </Link>
             </p>
           </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-xs text-gray-500">
+          By creating an account, you agree to our Terms of Service and Privacy Policy
+        </p>
       </div>
     </div>
   );

@@ -18,9 +18,9 @@ const DEVA_DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '�
 const devaNum = (n: number) => String(n).split('').map((d) => DEVA_DIGITS[+d] ?? d).join('');
 
 /**
- * The mantra as a printed folio: double rule frame, Devanagari at specimen scale,
- * IAST beneath each word, verse number rubricated between dandas.
- * After a result, corrections appear as sindoor marks, never as traffic-light colours.
+ * The mantra on a soft purple card: Devanagari large, IAST beneath each word.
+ * After a result, a wrong word turns orange-red and underlined, an unsure one amber
+ * and dotted. Every word is a button that plays the teacher saying it.
  */
 export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIndex, playingIndex, onWord, hint, heardLabel }: Props) {
   const paired = devanagariWords.length === romanWords.length;
@@ -28,7 +28,7 @@ export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIn
 
   return (
     <section aria-label="mantra" className="relative">
-      <div className="border-y-[3px] border-double border-paper-edge py-6">
+      <div className="rounded-[15px] bg-card-purple-light px-3 py-6 md:px-6">
         <div className="flex flex-wrap justify-center gap-x-3 gap-y-4 px-1" lang="sa">
           {Array.from({ length: count }).map((_, i) => {
             const deva = paired ? devanagariWords[i] : devanagariWords[i] ?? '';
@@ -46,25 +46,25 @@ export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIn
                 aria-pressed={playing}
                 className={[
                   'group relative flex min-h-12 min-w-12 flex-col items-center rounded-md px-1.5 pt-1 pb-1.5 transition-colors',
-                  'hover:bg-paper-deep active:bg-paper-deep',
-                  playing ? 'bg-paper-deep' : '',
-                  isFocus ? 'bg-sindoor-wash' : '',
+                  'hover:bg-card-purple active:bg-card-purple',
+                  playing ? 'bg-card-purple' : '',
+                  isFocus ? 'bg-card-pink' : '',
                 ].join(' ')}
               >
                 {deva && (
                   <span
                     className={[
                       'font-mantra text-[2.1rem] leading-[1.35] sm:text-[2.5rem]',
-                      status === 'ok' ? 'text-ink' : 'text-sindoor',
-                      status === 'check' ? 'underline decoration-sindoor decoration-dotted decoration-2 underline-offset-[10px]' : '',
-                      status === 'wrong' ? 'underline decoration-sindoor decoration-2 underline-offset-[10px]' : '',
+                      status === 'ok' ? 'text-brand-purple' : status === 'check' ? 'text-warning' : 'text-danger',
+                      status === 'check' ? 'underline decoration-dotted decoration-2 underline-offset-[10px]' : '',
+                      status === 'wrong' ? 'underline decoration-2 underline-offset-[10px]' : '',
                     ].join(' ')}
                   >
                     {deva}
                   </span>
                 )}
                 {paired && roman && (
-                  <span lang="sa-Latn" className={`font-mantra text-base italic ${status === 'ok' ? 'text-ink-soft' : 'text-sindoor'}`}>
+                  <span lang="sa-Latn" className={`font-mantra text-base italic ${status === 'ok' ? 'text-text-secondary' : status === 'check' ? 'text-warning' : 'text-danger'}`}>
                     {roman}
                   </span>
                 )}
@@ -72,7 +72,7 @@ export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIn
             );
           })}
           {verseNumber != null && (
-            <span aria-hidden className="font-mantra self-start pt-1 text-[2.1rem] leading-[1.35] text-sindoor">
+            <span aria-hidden className="font-mantra self-start pt-1 text-[2.1rem] leading-[1.35] text-brand-pink">
               ॥{devaNum(verseNumber)}॥
             </span>
           )}
@@ -89,12 +89,12 @@ export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIn
                   aria-pressed={playingIndex === i}
                   aria-label={`${w}${status !== 'ok' && marks?.[i]?.heard ? `, ${heardLabel}: ${marks[i].heard}` : ''}`}
                   className={[
-                    'font-mantra min-h-11 rounded-md px-1.5 text-lg italic transition-colors hover:bg-paper-deep',
-                    status === 'ok' ? 'text-ink-soft' : 'text-sindoor',
+                    'font-mantra min-h-11 rounded-md px-1.5 text-lg italic transition-colors hover:bg-card-purple',
+                    status === 'ok' ? 'text-text-secondary' : status === 'check' ? 'text-warning' : 'text-danger',
                     status === 'check' ? 'underline decoration-dotted decoration-2 underline-offset-4' : '',
                     status === 'wrong' ? 'underline decoration-2 underline-offset-4' : '',
-                    focusIndex === i ? 'bg-sindoor-wash' : '',
-                    playingIndex === i ? 'bg-paper-deep' : '',
+                    focusIndex === i ? 'bg-card-pink' : '',
+                    playingIndex === i ? 'bg-card-purple' : '',
                   ].join(' ')}
                 >
                   {w}
@@ -104,7 +104,7 @@ export function Folio({ devanagariWords, romanWords, verseNumber, marks, focusIn
           </div>
         )}
       </div>
-      <p className="mt-2 text-center text-sm text-ink-soft">{hint}</p>
+      <p className="mt-2 text-center text-sm text-text-secondary">{hint}</p>
     </section>
   );
 }

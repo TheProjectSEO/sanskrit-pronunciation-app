@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { auth } from '@/auth';
+import { canPractise } from '@/lib/mantra-access';
 
 // GET /api/mantras/[id]/verses - Public: list verses for a published mantra
 export async function GET(
@@ -13,12 +15,11 @@ export async function GET(
     // Verify mantra is published
     const { data: mantra } = await supabase
       .from('mantras')
-      .select('id')
+      .select('id, status, created_by')
       .eq('id', id)
-      .eq('status', 'published')
       .single();
 
-    if (!mantra) {
+    if (!mantra || !canPractise(mantra, (await auth())?.user)) {
       return NextResponse.json({ error: 'Mantra not found' }, { status: 404 });
     }
 

@@ -17,6 +17,11 @@ import { StepRail } from '@/components/practice/StepRail';
 import { Segmented } from '@/components/practice/Segmented';
 import { ResultPanel } from '@/components/practice/ResultPanel';
 import { WordDrill } from '@/components/practice/WordDrill';
+import { EarsPanel } from '@/components/practice/EarsPanel';
+import { OwnerBar } from '@/components/practice/OwnerBar';
+import { AppShell } from '@/components/shell/AppShell';
+import { useAppLanguage } from '@/lib/i18n/AppLanguage';
+import { isAdmin } from '@/lib/roles';
 import { VerdictAsk } from '@/components/practice/VerdictAsk';
 import { ProgressTrail, type Attempt } from '@/components/practice/ProgressTrail';
 
@@ -36,6 +41,8 @@ interface Mantra {
   reference_text_devanagari: string;
   reference_text_roman: string;
   reference_audio_url: string;
+  is_owner?: boolean;
+  status?: string;
 }
 
 type Phase = 'listen' | 'repeat' | 'analyzing' | 'result';
@@ -56,8 +63,10 @@ export default function PracticePage() {
   const [wordRefUrl, setWordRefUrl] = useState('');
 
   const [lang, setLang] = useState<FeedbackLanguage>('hindi');
-  const copy = copyFor(lang);
-  const langAttr = LANG_ATTR[lang];
+  // The interface follows the app language; `lang` is the guru's feedback language.
+  const { lang: appLang } = useAppLanguage();
+  const copy = copyFor(appLang === 'hi' ? 'hindi' : 'english');
+  const langAttr = LANG_ATTR[appLang === 'hi' ? 'hindi' : 'english'];
 
   const [phase, setPhase] = useState<Phase>('listen');
   const [speed, setSpeed] = useState<number>(1);
@@ -273,16 +282,16 @@ export default function PracticePage() {
   // ---------- render ----------
   if (loadState === 'loading') {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-paper">
-        <span className="font-mantra animate-pulse text-5xl text-sindoor" aria-label="loading">ॐ</span>
+      <main className="flex min-h-dvh items-center justify-center bg-white">
+        <span className="font-mantra animate-pulse text-5xl text-brand-pink" aria-label="loading">ॐ</span>
       </main>
     );
   }
   if (loadState === 'failed' || !mantra) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-paper px-6 text-center">
-        <p className="text-lg text-ink" lang={langAttr}>{copy.errors.loadFailed}</p>
-        <Link href="/" className="inline-flex min-h-12 items-center rounded-full bg-cloth px-6 font-semibold text-cloth-ink">{copy.back}</Link>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-white px-6 text-center">
+        <p className="text-lg text-text-primary" lang={langAttr}>{copy.errors.loadFailed}</p>
+        <Link href="/" className="inline-flex min-h-12 items-center rounded-full bg-brand-purple px-6 font-semibold text-white">{copy.back}</Link>
       </main>
     );
   }
@@ -291,20 +300,22 @@ export default function PracticePage() {
   const busy = recorder.preparing || phase === 'analyzing';
 
   return (
-    <div className="min-h-dvh bg-paper pb-40">
-      <header className="sticky top-0 z-30 bg-cloth text-cloth-ink" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="mx-auto flex max-w-xl items-center gap-1 px-2 py-1.5" style={{ paddingLeft: 'max(0.5rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
-          <Link href="/" aria-label={copy.back} className="flex h-12 w-12 items-center justify-center rounded-full hover:bg-white/10">
+    <AppShell hideBottomNav>
+    <div className="pb-40">
+      <div className="border-b border-line bg-card-purple-light">
+        <div className="mx-auto flex max-w-xl items-center gap-1 px-2 py-1.5">
+          <Link href="/" aria-label={copy.back} className="flex h-12 w-12 items-center justify-center rounded-full text-brand-purple hover:bg-card-purple">
             <ChevronLeftIcon aria-hidden className="h-6 w-6" />
           </Link>
-          <h1 className="min-w-0 flex-1 truncate text-[1.05rem] font-semibold">{mantra.name}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-lg font-bold text-brand-purple">{mantra.name}</h1>
         </div>
-      </header>
+      </div>
+      {mantra.is_owner && mantra.status && mantra.status !== 'published' && <OwnerBar mantraId={mantra.id} status={mantra.status} />}
 
       <main className="mx-auto flex max-w-xl flex-col gap-6 px-4 pt-5" style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
         {verses.length > 0 && (
           <nav aria-label={copy.fullMantra} className="-mx-4 overflow-x-auto px-4 scrollbar-hide">
-            <div className="flex gap-1 border-b border-paper-edge" role="tablist">
+            <div className="flex gap-1 border-b border-line-strong" role="tablist">
               {[null, ...verses].map((v) => {
                 const on = (v?.id ?? null) === (verse?.id ?? null);
                 return (
@@ -314,7 +325,7 @@ export default function PracticePage() {
                     role="tab"
                     aria-selected={on}
                     onClick={() => selectVerse(v)}
-                    className={`-mb-px min-h-12 shrink-0 border-b-2 px-3 text-[0.95rem] whitespace-nowrap ${on ? 'border-sindoor font-semibold text-sindoor' : 'border-transparent text-ink-soft hover:text-ink'}`}
+                    className={`-mb-px min-h-12 shrink-0 border-b-2 px-3 text-[0.95rem] whitespace-nowrap ${on ? 'border-brand-pink font-semibold text-brand-pink' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
                     lang={langAttr}
                   >
                     {v ? copy.verse(v.verse_number) : copy.fullMantra}
@@ -347,9 +358,9 @@ export default function PracticePage() {
         <section className="flex flex-col gap-4" lang={langAttr}>
           {phase !== 'result' && (
             <>
-              <h2 className="text-center text-[1.15rem] font-semibold text-ink">{phase === 'listen' ? copy.listenTitle : copy.repeatTitle}</h2>
-              <div className="h-1.5 overflow-hidden rounded-full bg-paper-deep" aria-hidden>
-                <div className="h-full bg-cloth transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
+              <h2 className="text-center text-[1.15rem] font-semibold text-text-primary">{phase === 'listen' ? copy.listenTitle : copy.repeatTitle}</h2>
+              <div className="h-1.5 overflow-hidden rounded-full bg-card-purple" aria-hidden>
+                <div className="h-full bg-brand-purple transition-[width] duration-200" style={{ width: `${progress * 100}%` }} />
               </div>
               <Segmented<number>
                 label={copy.speedLabel}
@@ -378,6 +389,8 @@ export default function PracticePage() {
             />
           )}
 
+          {phase === 'result' && result?.debug && isAdmin(session?.user?.role) && <EarsPanel debug={result.debug} />}
+
           {phase === 'result' && result?.log_id && result.status !== 'say_again' && (
             <VerdictAsk key={result.log_id} logId={result.log_id} wav={take?.wav ?? null} copy={copy} langAttr={langAttr} />
           )}
@@ -385,23 +398,23 @@ export default function PracticePage() {
           {(phase === 'listen' || phase === 'result') && <ProgressTrail attempts={attempts} copy={copy} langAttr={langAttr} />}
 
           {inlineError && (
-            <div role="alert" className="rounded-md border border-sindoor/40 bg-sindoor-wash px-4 py-3 text-ink">
-              <p className="font-semibold text-sindoor">{inlineError.message}</p>
+            <div role="alert" className="rounded-md border border-brand-pink/40 bg-card-pink px-4 py-3 text-text-primary">
+              <p className="font-semibold text-brand-pink">{inlineError.message}</p>
               {inlineError.detail && <p className="mt-1 text-[0.95rem] leading-relaxed">{inlineError.detail}</p>}
               {inlineError.retry && (
-                <button type="button" onClick={inlineError.retry} className="mt-2 inline-flex min-h-12 items-center gap-2 font-semibold text-cloth underline underline-offset-4">
+                <button type="button" onClick={inlineError.retry} className="mt-2 inline-flex min-h-12 items-center gap-2 font-semibold text-brand-purple underline underline-offset-4">
                   <ArrowPathIcon aria-hidden className="h-5 w-5" /> {copy.errors.retry}
                 </button>
               )}
             </div>
           )}
 
-          <label className="flex items-center justify-between gap-3 text-[0.95rem] text-ink-soft">
+          <label className="flex items-center justify-between gap-3 text-[0.95rem] text-text-secondary">
             {copy.feedbackIn}
             <select
               value={lang}
               onChange={(e) => changeLang(e.target.value as FeedbackLanguage)}
-              className="min-h-12 rounded-lg border border-paper-edge bg-paper-deep px-3 text-ink"
+              className="min-h-12 rounded-lg border border-line-strong bg-card-purple-light px-3 text-text-primary"
             >
               {FEEDBACK_LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code}>{l.label}</option>
@@ -412,15 +425,15 @@ export default function PracticePage() {
       </main>
 
       {/* Thumb zone: one primary action for the current step */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-paper-edge bg-paper/95 backdrop-blur-sm" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line-strong bg-white/95 backdrop-blur-sm" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <div className="mx-auto flex max-w-xl items-center gap-3 px-4 pt-3" lang={langAttr}>
           {phase === 'listen' && (
             <>
-              <button type="button" onClick={playTeacher} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-cloth text-lg font-semibold text-cloth-ink shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
+              <button type="button" onClick={playTeacher} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-purple text-lg font-semibold text-white shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
                 {playing ? <PauseIcon aria-hidden className="h-6 w-6" /> : <PlayIcon aria-hidden className="h-6 w-6" />}
                 {playing ? copy.pause : copy.listen}
               </button>
-              <button type="button" onClick={() => { stopAll(); setPhase('repeat'); }} aria-label={copy.startChant} className="flex h-14 w-14 items-center justify-center rounded-xl border border-paper-edge bg-paper-deep text-cloth">
+              <button type="button" onClick={() => { stopAll(); setPhase('repeat'); }} aria-label={copy.startChant} className="flex h-14 w-14 items-center justify-center rounded-xl border border-line-strong bg-card-purple-light text-brand-purple">
                 <MicrophoneIcon aria-hidden className="h-6 w-6" />
               </button>
             </>
@@ -428,22 +441,22 @@ export default function PracticePage() {
 
           {(phase === 'repeat' || phase === 'analyzing') && (
             <>
-              <button type="button" onClick={playTeacher} disabled={recorder.recording || busy} aria-label={playing ? copy.pause : copy.listenAgain} className="flex h-14 w-14 items-center justify-center rounded-xl border border-paper-edge bg-paper-deep text-cloth disabled:opacity-40">
+              <button type="button" onClick={playTeacher} disabled={recorder.recording || busy} aria-label={playing ? copy.pause : copy.listenAgain} className="flex h-14 w-14 items-center justify-center rounded-xl border border-line-strong bg-card-purple-light text-brand-purple disabled:opacity-40">
                 {playing ? <PauseIcon aria-hidden className="h-6 w-6" /> : <PlayIcon aria-hidden className="h-6 w-6" />}
               </button>
               {busy ? (
-                <p className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl bg-paper-deep text-[1.05rem] text-ink" role="status">
-                  <span aria-hidden className="font-mantra animate-pulse text-2xl text-sindoor">ॐ</span>
+                <p className="flex min-h-14 flex-1 items-center justify-center gap-3 rounded-xl bg-card-purple-light text-[1.05rem] text-text-primary" role="status">
+                  <span aria-hidden className="font-mantra animate-pulse text-2xl text-brand-pink">ॐ</span>
                   {copy.listening}
                 </p>
               ) : recorder.recording ? (
-                <button type="button" onClick={recorder.stop} className="relative inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-sindoor text-lg font-semibold text-cloth-ink ring-4 ring-marigold/60">
+                <button type="button" onClick={recorder.stop} className="relative inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-pink text-lg font-semibold text-white ring-4 ring-brand-gold/60">
                   <StopIcon aria-hidden className="h-6 w-6" />
                   {copy.stopChant}
                   <span className="absolute right-4 tabular-nums text-base font-normal opacity-90">{recorder.maxSeconds - recorder.seconds}</span>
                 </button>
               ) : (
-                <button type="button" onClick={startChant} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-cloth text-lg font-semibold text-cloth-ink shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
+                <button type="button" onClick={startChant} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-purple text-lg font-semibold text-white shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
                   <MicrophoneIcon aria-hidden className="h-6 w-6" />
                   {copy.startChant}
                 </button>
@@ -454,22 +467,22 @@ export default function PracticePage() {
           {phase === 'result' && (
             <>
               {nextVerse && result?.status === 'ok' && result.band === 'close' ? (
-                <button type="button" onClick={() => selectVerse(nextVerse)} className="inline-flex min-h-14 flex-1 items-center justify-center rounded-xl border border-paper-edge bg-paper-deep text-[1.05rem] font-semibold text-ink">
+                <button type="button" onClick={() => selectVerse(nextVerse)} className="inline-flex min-h-14 flex-1 items-center justify-center rounded-xl border border-line-strong bg-card-purple-light text-[1.05rem] font-semibold text-text-primary">
                   {copy.nextVerse}
                 </button>
               ) : (
-                <button type="button" onClick={() => { stopAll(); setResult(null); setPhase('listen'); }} aria-label={copy.listenAgain} className="flex h-14 w-14 items-center justify-center rounded-xl border border-paper-edge bg-paper-deep text-cloth">
+                <button type="button" onClick={() => { stopAll(); setResult(null); setPhase('listen'); }} aria-label={copy.listenAgain} className="flex h-14 w-14 items-center justify-center rounded-xl border border-line-strong bg-card-purple-light text-brand-purple">
                   <PlayIcon aria-hidden className="h-6 w-6" />
                 </button>
               )}
-              <button type="button" onClick={startChant} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-cloth text-lg font-semibold text-cloth-ink shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
+              <button type="button" onClick={startChant} className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-purple text-lg font-semibold text-white shadow-[0_6px_14px_-8px_rgba(43,26,16,0.7)]">
                 <MicrophoneIcon aria-hidden className="h-6 w-6" />
                 {copy.tryAgain}
               </button>
             </>
           )}
         </div>
-        {recorder.recording && <p className="mx-auto mt-2 max-w-xl px-4 text-center text-sm text-ink-soft" lang={langAttr} role="status">{copy.recordingHint}</p>}
+        {recorder.recording && <p className="mx-auto mt-2 max-w-xl px-4 text-center text-sm text-text-secondary" lang={langAttr} role="status">{copy.recordingHint}</p>}
       </div>
 
       <audio
@@ -494,5 +507,6 @@ export default function PracticePage() {
         />
       )}
     </div>
+    </AppShell>
   );
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { transcribeAudio, identifyAndCorrectMantra } from '@/lib/audio/whisper';
@@ -11,8 +12,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     // Parse multipart form data

@@ -1,49 +1,25 @@
-# Design
+# Tapaswe design system
 
-The Tapaswe "pothi" world, built 2 Nov 2026. Source: Gita Press booklets and palm-leaf
-manuscripts. Devotional, printed, quiet. Tokens live in `app/globals.css`; never hard-code a colour.
+The original Tapaswe look, kept and made consistent: white pages, deep purple and lotus pink, soft tinted cards. The prayer-book ("pothi") redesign of 2 Nov 2026 was rolled back on 3 Nov 2026 at the owner's request. Its token names still resolve to the brand colours (see `app/globals.css`) so old classes cannot render off-brand.
 
-## Colour (roles, light / dark)
-| Token | Light | Use |
-|---|---|---|
-| `paper` | #f5e6b3 | page ground (turmeric-washed paper, not cream) |
-| `paper-deep` | #ecd58f | pressed states, secondary buttons, segmented track |
-| `paper-edge` | #d9bc6a | double rules, hairlines, borders |
-| `ink` | #2b1a10 | text, Devanagari |
-| `ink-soft` | #5b3d27 | secondary text, transliteration (7:1 on paper) |
-| `sindoor` | #a3221a | rubric only: verse numbers, current step, corrections, errors |
-| `sindoor-wash` | #f2cfae | errata slip and error ground |
-| `cloth` / `cloth-ink` | #5c1a12 / #f8ecc4 | madder book-cloth: header band, primary actions |
-| `marigold` | #e8a21a | live recording ring only |
-| `leaf` | #2f5a2a | blessing mark for a clean recitation |
-| `focus` | #1f4fa3 | keyboard focus, deliberately not a rubric colour |
-Dark mode redefines the same roles (night page: #1d1410 ground, #f3e3b6 ink).
-Never red/yellow/green traffic lights for scores. Status is shown with rubric marks.
+## Colour roles (`app/globals.css` → Tailwind classes)
+
+| Role | Token / class | Value | Use |
+|---|---|---|---|
+| Primary | `brand-purple` (`-hover`) | #2E2871 | headings, primary buttons, selected state, admin badge |
+| Accent | `brand-pink` (`-hover`) | #EF5DA8 | the one call to action per screen, active tab, recording |
+| Gold | `brand-gold` | #F0B100 | stars and streaks only |
+| Cards | `card-purple`, `card-pink`, `card-blue` (+ `-light`) | tints | grouped content, mantra cards (alternate purple/pink) |
+| Text | `text-primary`, `text-secondary`, `icon-inactive` | #1E1B4B, #6A7282, #8B97A8 | body, secondary, inactive icons |
+| Lines | `line`, `line-strong` | #ECEAF5, #D9D5EE | dividers, input borders |
+| Semantic | `success`, `warning`, `danger` (+ `-bg`) | green / amber / orange-red | word marks (ok / unsure / wrong), status badges, alerts |
+
+Rules: no orange or grey-only accents anywhere (the old admin orange was mapped onto the brand). Pink and purple never carry error meaning; errors use `danger`.
 
 ## Type
-- Mantra and transliteration: Tiro Devanagari Sanskrit (`font-mantra`). Built for Sanskrit
-  conjuncts and Vedic marks. Devanagari 2.1-2.5rem on the folio; IAST italic beneath.
-- Interface: Mukta (Latin + Devanagari), with Noto Sans Tamil / Kannada / Telugu for those
-  feedback languages (`font-ui`). Body 1.05-1.2rem; older users first.
-- Set `lang` on every block: `sa` for mantra, `sa-Latn` for IAST, the feedback language for UI copy.
+System UI font for the interface (as the original app). `font-mantra` (Tiro Devanagari Sanskrit) only for mantra text, Devanagari and IAST.
 
-## Components
-- **Folio**: mantra between double rules (`border-double`, 3px, paper-edge). Each word is a
-  button (min 48px). When Devanagari and IAST word counts differ (sandhi), the IAST line carries
-  taps and marks. Verse number in sindoor between dandas: ॥१॥.
-- **Corrections**: `check` = dotted sindoor underline; `wrong` = solid sindoor underline. The
-  single focus correction is an **errata slip**: sindoor-wash ground, soft offset shadow, enters
-  with one 450ms ease-out tilt-and-settle (the page's one authored motion).
-- **Step rail**: सुनें · दोहराएँ · गुरु की बात. Current step in sindoor, done steps get a leaf check.
-- **Thumb bar**: fixed bottom, one primary cloth button for the current step (56px), one square
-  secondary. Respects safe-area insets.
-- **Segmented control**: speed as words (बहुत धीमा / धीमा / सामान्य), never "0.75x".
-- **Errors**: inline, inside the step they belong to, with recovery steps and a Retry. Only a
-  failed mantra load replaces the page.
-
-## Rules
-- One primary action visible per step. No XP, points, stars, streak badges or invented stats.
-- Icons from Heroicons only; no emoji as UI.
-- Touch targets ≥ 48px (44px absolute floor); WCAG 2.2 AA contrast; visible `:focus-visible`.
-- Reduced motion collapses all animation.
-- Instructor pages (`/instructor/*`) have not been migrated yet and still use the old orange theme.
+## Structure
+- User: `components/shell/AppShell.tsx`. Header with तपस्वे Tapaswe; desktop top links, phone bottom tabs (Home, Mantras, Record, Profile). Admin pill only for admins.
+- Admin: `app/instructor/layout.tsx`. Same colours, side menu on desktop, scrolling tabs on phones. Team is shown only to super admins.
+- Interface language: English / हिन्दी (`lib/i18n`), chosen in Profile; guru feedback language is separate (5 languages).

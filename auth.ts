@@ -1,9 +1,12 @@
 import NextAuth, { User } from 'next-auth';
+import type { Role } from '@/lib/roles';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import { z } from 'zod';
 import { verifyPassword } from './lib/auth/password';
 import { getServiceSupabase } from './lib/supabase/service';
+
+const ROLE_REFRESH_MS = 5 * 60 * 1000;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
@@ -53,7 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-          role: user.role as 'user' | 'instructor',
+          role: user.role as Role,
         };
       },
     }),
@@ -136,6 +139,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.roleCheckedAt = Date.now();
+      }
+      // Re-read the role every few minutes, so a promotion or removal by a super admin
+      // takes effect without the person signing out.
+      if (token.id && Date.now() - Number(token.roleCheckedAt ?? 0) > ROLE_REFRESH_MS) {
+        const { data } = await getServiceSupabase().from('users').select('role, is_active').eq('id', token.id as string).single();
+        if (data) token.role = data.is_active === false ? 'user' : data.role;
+        token.roleCheckedAt = Date.now();
       }
       return token;
     },
@@ -146,7 +157,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as 'user' | 'instructor';
+        session.user.role = token.role as Role;
       }
       return session;
     },

@@ -27,16 +27,16 @@ export function VerdictAsk({ logId, wav, copy, langAttr }: Props) {
   };
 
   if (sent) {
-    return <p className="text-[0.95rem] leading-relaxed text-ink-soft" lang={langAttr} role="status">{copy.verdictThanks}</p>;
+    return <p className="text-[0.95rem] leading-relaxed text-text-secondary" lang={langAttr} role="status">{copy.verdictThanks}</p>;
   }
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-dashed border-paper-edge pt-3" lang={langAttr}>
-      <span className="text-[0.95rem] text-ink-soft">{copy.verdictAsk}</span>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-dashed border-line-strong pt-3" lang={langAttr}>
+      <span className="text-[0.95rem] text-text-secondary">{copy.verdictAsk}</span>
       <div className="flex gap-2">
-        <button type="button" onClick={() => send('right')} className="inline-flex min-h-12 items-center rounded-full border border-paper-edge px-4 text-ink hover:bg-paper-deep">
+        <button type="button" onClick={() => send('right')} className="inline-flex min-h-12 items-center rounded-full border border-line-strong px-4 text-text-primary hover:bg-card-purple-light">
           {copy.verdictYes}
         </button>
-        <button type="button" onClick={() => send('wrong')} className="inline-flex min-h-12 items-center rounded-full border border-paper-edge px-4 text-ink hover:bg-paper-deep">
+        <button type="button" onClick={() => send('wrong')} className="inline-flex min-h-12 items-center rounded-full border border-line-strong px-4 text-text-primary hover:bg-card-purple-light">
           {copy.verdictNo}
         </button>
       </div>

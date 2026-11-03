@@ -4,6 +4,8 @@ import { getServiceSupabase } from '@/lib/supabase/service';
 import { analyzeAttempt } from '@/lib/pronunciation/analyze';
 import { teacherJudge, teacherLiteral } from '@/lib/pronunciation/reference';
 import { splitWords } from '@/lib/pronunciation/phonetic';
+import { canPractise } from '@/lib/mantra-access';
+import { isAdmin } from '@/lib/roles';
 import { legacyAnalyze } from '@/lib/pronunciation/legacy';
 import { finishAttempt, reserveAttempt } from '@/lib/pronunciation/log';
 
@@ -39,11 +41,10 @@ export async function POST(request: NextRequest) {
   const supabase = getServiceSupabase();
   const { data: mantra } = await supabase
     .from('mantras')
-    .select('id, reference_text_roman, reference_text_devanagari, reference_audio_url, status')
+    .select('id, reference_text_roman, reference_text_devanagari, reference_audio_url, status, created_by')
     .eq('id', mantraId)
     .single();
-  // Drafts are for instructors only.
-  if (!mantra || (mantra.status !== 'published' && session?.user?.role !== 'instructor')) {
+  if (!mantra || !canPractise(mantra, session?.user)) {
     return NextResponse.json({ error: 'Mantra not found.' }, { status: 404 });
   }
 
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
     const result = await analyzeAttempt({ wav, romanText: roman, devanagariText: devanagari, teacherLiteral: teacher, teacherJudge: teacherJ, feedbackLanguage });
 
     await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result, startedAt, audioBytes: wav.length });
-    return NextResponse.json({ ...result, log_id: attemptId });
+    const { debug, ...publicResult } = result;
+    return NextResponse.json({ ...publicResult, log_id: attemptId, ...(isAdmin(session?.user?.role) ? { debug } : {}) });
   } catch (e) {
     console.error('analyze v2 failed', e);
     await finishAttempt(supabase, attemptId, { userId, verseId, kind: 'mantra', result: null, startedAt, audioBytes: audio.size, error: String(e).slice(0, 300) });

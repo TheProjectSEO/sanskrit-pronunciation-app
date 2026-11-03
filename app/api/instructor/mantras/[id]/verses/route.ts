@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { z } from 'zod';
@@ -38,7 +39,7 @@ export async function GET(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -49,7 +50,6 @@ export async function GET(
       .from('mantras')
       .select('id')
       .eq('id', id)
-      .eq('created_by', session.user.id)
       .single();
 
     if (!mantra) {
@@ -86,7 +86,7 @@ export async function POST(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -106,7 +106,6 @@ export async function POST(
       .from('mantras')
       .select('id')
       .eq('id', id)
-      .eq('created_by', session.user.id)
       .single();
 
     if (!mantra) {
@@ -152,7 +151,7 @@ export async function PATCH(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -172,7 +171,6 @@ export async function PATCH(
       .from('mantras')
       .select('id')
       .eq('id', id)
-      .eq('created_by', session.user.id)
       .single();
 
     if (!mantra) {
@@ -223,7 +221,7 @@ export async function DELETE(
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
+    if (!isAdmin(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -243,7 +241,6 @@ export async function DELETE(
       .from('mantras')
       .select('id')
       .eq('id', id)
-      .eq('created_by', session.user.id)
       .single();
 
     if (!mantra) {

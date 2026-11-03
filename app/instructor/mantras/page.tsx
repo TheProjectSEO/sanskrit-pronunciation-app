@@ -116,7 +116,7 @@ export default function MantrasPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-pink"></div>
       </div>
     );
   }
@@ -126,17 +126,17 @@ export default function MantrasPage() {
       {/* Page Header */}
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Mantras</h1>
+          <h1 className="text-3xl font-bold text-brand-purple">Mantras</h1>
           <p className="mt-1 text-gray-600">
-            Manage your uploaded mantras and review processing status
+            The library and drafts. Open a mantra to edit its text, verses and word timings.
           </p>
         </div>
         <Link
           href="/instructor/upload"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-pink text-white font-semibold rounded-lg hover:bg-brand-pink-hover transition-colors"
         >
           <PlusIcon className="w-5 h-5" />
-          Upload New Mantra
+          Record &amp; publish
         </Link>
       </div>
 
@@ -144,7 +144,7 @@ export default function MantrasPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <p className="text-sm text-gray-600">Total Mantras</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
+          <p className="text-3xl font-bold text-brand-purple mt-1">{stats.total}</p>
         </div>
         <div className="bg-white rounded-xl border border-green-200 p-6">
           <p className="text-sm text-gray-600">Published</p>
@@ -152,7 +152,7 @@ export default function MantrasPage() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <p className="text-sm text-gray-600">Drafts</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{stats.drafts}</p>
+          <p className="text-3xl font-bold text-brand-purple mt-1">{stats.drafts}</p>
         </div>
         <div className="bg-white rounded-xl border border-yellow-200 p-6">
           <p className="text-sm text-gray-600">Processing</p>
@@ -193,7 +193,7 @@ export default function MantrasPage() {
             {mantras.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                  No mantras yet. Click "Upload New Mantra" to get started.
+                  No mantras yet. Click "Record &amp; publish" to get started.
                 </td>
               </tr>
             ) : (
@@ -234,7 +234,7 @@ export default function MantrasPage() {
                     <div className="flex items-center gap-3">
                       <Link
                         href={`/instructor/mantras/${mantra.id}`}
-                        className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+                        className="text-brand-pink hover:text-brand-pink-hover text-sm font-medium"
                       >
                         View
                       </Link>

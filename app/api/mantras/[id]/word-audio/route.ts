@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase/service';
+import { auth } from '@/auth';
+import { canPractise } from '@/lib/mantra-access';
 
 export async function GET(
   request: NextRequest,
@@ -12,9 +14,12 @@ export async function GET(
     // Fetch mantra to get reference audio URL
     const { data: mantra } = await supabase
       .from('mantras')
-      .select('reference_audio_url, audio_url')
+      .select('reference_audio_url, audio_url, status, created_by')
       .eq('id', mantraId)
       .single();
+    if (!mantra || !canPractise(mantra, (await auth())?.user)) {
+      return NextResponse.json({ error: 'Mantra not found' }, { status: 404 });
+    }
 
     const referenceAudioUrl = mantra?.reference_audio_url || mantra?.audio_url || '';
 

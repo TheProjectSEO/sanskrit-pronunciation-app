@@ -8,7 +8,7 @@ declare module 'next-auth' {
     user: {
       id: string;
       email: string;
-      role: 'user' | 'instructor';
+      role: import('@/lib/roles').Role;
     } & DefaultSession['user'];
   }
 
@@ -18,7 +18,7 @@ declare module 'next-auth' {
   interface User {
     id: string;
     email: string;
-    role: 'user' | 'instructor';
+    role: import('@/lib/roles').Role;
   }
 }
 
@@ -28,6 +28,6 @@ declare module '@auth/core/jwt' {
    */
   interface JWT {
     id: string;
-    role: 'user' | 'instructor';
+    role: import('@/lib/roles').Role;
   }
 }

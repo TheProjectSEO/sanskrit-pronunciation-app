@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { z } from 'zod';
@@ -11,8 +12,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     const supabase = getServiceSupabase();
@@ -34,7 +35,7 @@ export async function GET() {
           error_message
         )
       `)
-      .eq('created_by', userId)
+      .in('status', ['draft', 'published'])
       .order('created_at', { ascending: false });
 
     if (mantrasError) {
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     const body = await request.json();

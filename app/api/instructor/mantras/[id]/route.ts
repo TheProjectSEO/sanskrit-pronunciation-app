@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isAdmin } from '@/lib/roles';
 import { auth } from '@/auth';
 import { getServiceSupabase } from '@/lib/supabase/service';
 import { z } from 'zod';
@@ -26,8 +27,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     const supabase = getServiceSupabase();
@@ -54,7 +55,6 @@ export async function GET(
         )
       `)
       .eq('id', id)
-      .eq('created_by', userId)
       .single();
 
     if (mantraError) {
@@ -89,8 +89,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'instructor') {
-      return NextResponse.json({ error: 'Forbidden: Instructor access required' }, { status: 403 });
+    if (!isAdmin(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden: admin access required' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -110,7 +110,6 @@ export async function PATCH(
       .from('mantras')
       .select('id, created_by')
       .eq('id', id)
-      .eq('created_by', userId)
       .single();
 
     if (fetchError || !existing) {
